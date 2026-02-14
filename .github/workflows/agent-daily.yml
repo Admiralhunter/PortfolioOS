@@ -46,7 +46,7 @@ jobs:
         run: uv python install 3.13
 
       - name: Download blackboard
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: blackboard-todo-scanner
           path: agents/blackboard/
@@ -78,7 +78,7 @@ jobs:
         run: uv python install 3.13
 
       - name: Download blackboard
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: blackboard-todo-scanner-llm
           path: agents/blackboard/
