@@ -144,13 +144,9 @@ Every PR must verify:
 
 > **The `gh` CLI is NOT available in this project's development environment.** This project is developed using Claude Code on the web, which does not have `gh` installed. **Do not attempt to use `gh` commands.** All GitHub API interactions must use `curl` against the [GitHub REST API](https://docs.github.com/en/rest).
 
-<!-- TODO(BUILD_TODO#13): Raw curl with heredocs and JSON escaping is one of the
-     most fragile operations for LLM agents. Nested quotes, newlines, and special
-     characters in PR descriptions cause silent failures. Consider creating a
-     helper script (e.g., scripts/create-pr.py) that takes structured arguments
-     and handles JSON construction internally. -->
-
 Authenticate with the `GITHUB_TOKEN` environment variable, which is automatically available in Claude Code web sessions and CI.
+
+> **Tip:** A helper script `scripts/create-pr.sh` is available to simplify PR creation. See `scripts/create-pr.sh --help` for usage.
 
 ### Creating a Pull Request via `curl`
 
@@ -258,19 +254,19 @@ Look for:
 
 Run the full test and lint suite:
 
-<!-- TODO(BUILD_TODO#2): pnpm lint/test/build don't exist yet (no package.json).
-     These commands will fail. Scaffold package.json with stub scripts or mark
-     them as conditional.
-     TODO(BUILD_TODO#6): There is no root-level unified command to run both
-     Python and JS checks. Agents must remember two toolchains in two
-     directories. Consider a root Makefile or script with a `check-all` target. -->
 ```bash
-pnpm lint
-pnpm test
-pnpm build
-# If Python changes:
+# Unified check (runs all available checks):
+make check-all
+
+# Or run individually:
+# Python checks:
 cd python && uv run pytest
 cd python && uv run ruff check .
+
+# Frontend checks (once package.json exists):
+# pnpm lint
+# pnpm test
+# pnpm build
 ```
 
 **Do not check the "tests pass" box unless you actually ran the commands and they passed.** Claiming tests pass without running them is a serious trust violation.
@@ -380,10 +376,8 @@ risk:medium
 
 ## Enforcement
 
-<!-- TODO(BUILD_TODO#3): No CI/CD workflows exist (.github/workflows/ is empty).
-     All enforcement described here is honor-based with zero automation. Once
-     ci.yml is created, these rules should be enforced via required status checks
-     and branch protection rules. -->
+CI enforcement is configured in `.github/workflows/ci.yml` and runs Python lint, type check, and tests on every push and PR to `main`.
+
 These rules exist because AI agents can generate plausible-looking PRs that pass superficial review but contain subtle issues: duplicated logic, oversized files, untested edge cases, or security gaps.
 
 The tag system and checklists force agents to slow down, categorize their work, and verify quality before requesting review. Reviewers should:
