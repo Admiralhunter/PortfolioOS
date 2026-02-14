@@ -79,6 +79,16 @@ PortfolioOS/
 
 5. **LM Studio as default LLM provider**: Local inference preserves the privacy-first principle — no portfolio data leaves the machine. Cloud providers (OpenAI, Anthropic, OpenRouter) are available but opt-in only. All providers implement a unified interface.
 
+## Pull Request Process
+
+AI agents **must** follow the PR template and tag system defined in [`.github/pull_request_template.md`](.github/pull_request_template.md). Full tag definitions and enforcement rules are in [`.github/AGENT_PR_GUIDE.md`](.github/AGENT_PR_GUIDE.md).
+
+**Hard limits enforced on every PR:**
+- **File size**: 700 lines max per source file
+- **Function length**: 100 lines max per function
+- **Tags**: Every PR must declare a change type, scope(s), and risk level
+- **Self-review**: Agents must verify DRY compliance, documentation, security, and testing before opening a PR
+
 ## Coding Conventions
 
 - **TypeScript**: strict mode enabled, no `any` types, prefer `interface` over `type` for object shapes
