@@ -3,6 +3,16 @@
 Runs: lint -> typecheck -> test -> docs -> build
 Stops at first failure unless --continue-on-error is passed.
 
+TODO(BUILD_TODO#9): Sphinx docs build sits between tests and package build in
+the critical path, but no docs/conf.py exists yet. The docs step will fail
+immediately and block the package build. Consider making docs non-blocking or
+moving it after build.
+
+TODO(BUILD_TODO#14): Verbose output is opt-in. When a step fails, the agent
+gets only a one-line summary and must re-run with --verbose to diagnose.
+Consider auto-escalating to verbose on failure (print full output if exit
+code != 0).
+
 Writes:
     .reports/summary.json  - Aggregate results from all tools
 

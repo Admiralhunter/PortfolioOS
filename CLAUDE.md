@@ -166,6 +166,12 @@ curl -s \
 
 ## Common Commands
 
+<!-- TODO(BUILD_TODO#2): pnpm dev/build/test/lint don't exist — no package.json
+     has been created yet. These commands will fail until Phase 0 scaffolding
+     is complete. -->
+<!-- TODO(BUILD_TODO#6): No unified root-level command runs both Python and JS
+     checks. Agents must manually cd between directories. Add a root Makefile
+     or check-all script. -->
 ```bash
 # Development
 pnpm dev                    # Start Electron app in dev mode

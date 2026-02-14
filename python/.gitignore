@@ -1,3 +1,8 @@
+# TODO(BUILD_TODO#1): This is the ONLY .gitignore in the repo. The project root
+# has no .gitignore. Once Electron/React scaffolding lands, node_modules/, dist/,
+# .vite/, .env, and OS artifacts will get committed on the first `git add .`.
+# Create a root-level .gitignore ASAP.
+
 # Python
 __pycache__/
 *.py[cod]

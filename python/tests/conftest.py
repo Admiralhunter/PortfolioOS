@@ -1,4 +1,10 @@
-"""Shared pytest fixtures for PortfolioOS analytics tests."""
+"""Shared pytest fixtures for PortfolioOS analytics tests.
+
+TODO(BUILD_TODO#7): Fixtures are defined here but NO actual test files exist.
+The CI pipeline will report PASS with 0 tests. Add tests for at minimum:
+  - portfolioos/main.py (dispatch, message loop, error handling)
+  - scripts/_report.py (report generation, summary aggregation)
+"""
 
 from __future__ import annotations
 

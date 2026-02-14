@@ -31,6 +31,10 @@ TOOL_NAME = "docs"
 
 def run(verbose: bool = False) -> dict[str, Any]:
     """Run Sphinx builds (HTML + JSON), write reports, return results."""
+    # TODO(BUILD_TODO#9): No docs/conf.py exists yet. This step will fail
+    # immediately, and since it's in the critical CI path (ci.py runs
+    # lint -> typecheck -> test -> docs -> build), it blocks the package
+    # build. Either add a minimal conf.py or make this step non-blocking.
     report_dir = ensure_report_dir(TOOL_NAME)
     docs_src = PYTHON_ROOT / "docs"
     html_out = report_dir / "html"
