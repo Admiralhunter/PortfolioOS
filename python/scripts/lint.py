@@ -69,7 +69,7 @@ def run(verbose: bool = False) -> dict[str, Any]:
     format_files = 0
     if not format_clean:
         for line in format_result.stdout.splitlines():
-            if line.startswith("--- ") or line.startswith("would reformat"):
+            if line.startswith(("--- ", "would reformat")):
                 format_files += 1
 
     passed = check_json_result.returncode == 0 and format_clean

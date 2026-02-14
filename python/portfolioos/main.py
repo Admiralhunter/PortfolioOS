@@ -46,20 +46,20 @@ def main() -> None:
     and writes JSON responses to stdout. Runs indefinitely until
     stdin is closed.
     """
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
+    for raw_line in sys.stdin:
+        stripped = raw_line.strip()
+        if not stripped:
             continue
 
         request: dict[str, Any] = {}
         try:
-            request = json.loads(line)
+            request = json.loads(stripped)
             request_id = request.get("id", "unknown")
             method = request["method"]
             params = request.get("params", {})
             result = dispatch(method, params)
             response: dict[str, Any] = {"id": request_id, "result": result}
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — dispatcher must catch all errors and return them as JSON
             request_id = (
                 request.get("id", "unknown") if isinstance(request, dict) else "unknown"
             )
