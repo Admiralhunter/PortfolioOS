@@ -37,6 +37,11 @@ Desktop.ini
 htmlcov/
 .reports/
 
+# ── Agent system runtime artifacts ──
+agents/blackboard/blackboard.db
+agents/reports/
+agents/.venv/
+
 # ── Build caches ──
 .mypy_cache/
 .pytest_cache/

@@ -1,0 +1,62 @@
+name: Daily Agent Cycle
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+  workflow_dispatch:       # Manual trigger
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  todo-scanner:
+    name: TODO Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Run TODO Scanner
+        run: uv run python -m agents.agents.todo_scanner --repo-root .
+
+      - name: Upload blackboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackboard-todo-scanner
+          path: agents/blackboard/blackboard.db
+          retention-days: 7
+
+  overlord:
+    name: Overlord Report
+    runs-on: ubuntu-latest
+    needs: todo-scanner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Download blackboard from TODO Scanner
+        uses: actions/download-artifact@v4
+        with:
+          name: blackboard-todo-scanner
+          path: agents/blackboard/
+
+      - name: Run Overlord
+        run: uv run python -m agents.agents.overlord --report-dir agents/reports
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-report-${{ github.run_id }}
+          path: agents/reports/
+          retention-days: 30

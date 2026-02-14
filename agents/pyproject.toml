@@ -1,0 +1,29 @@
+[project]
+name = "portfolioos-agents"
+version = "0.1.0"
+description = "Multi-agent monitoring and development system for PortfolioOS"
+requires-python = ">=3.13"
+# No runtime dependencies — agents use only stdlib (sqlite3, re, json, etc.)
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["*_test.py", "test_*.py"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "SIM", "RUF"]
+ignore = ["S603", "S607"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S108"]
