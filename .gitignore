@@ -1,0 +1,55 @@
+# ── Node / Electron ──
+node_modules/
+dist/
+dist-electron/
+out/
+release/
+.vite/
+
+# ── Python (covered in python/.gitignore too) ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+
+# ── Environment / Secrets ──
+.env
+.env.local
+.env.*.local
+
+# ── OS artifacts ──
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ── IDE ──
+.idea/
+.vscode/
+*.code-workspace
+
+# ── Coverage / Reports ──
+.coverage
+.coverage.*
+htmlcov/
+.reports/
+
+# ── Build caches ──
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tsbuildinfo
+*.tsbuildinfo
+
+# ── Logs ──
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Electron-specific ──
+*.asar

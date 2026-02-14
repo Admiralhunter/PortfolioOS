@@ -54,18 +54,34 @@ def write_text_report(
 def run_command(
     cmd: list[str],
     cwd: Path | None = None,
+    timeout: int = 120,
 ) -> subprocess.CompletedProcess[str]:
-    """Run a subprocess and capture all output."""
-    # TODO(BUILD_TODO#8): Add a timeout parameter (default 120s). If mypy,
-    # pytest, or ruff hangs (e.g., infinite import loop, network stall on
-    # yfinance import), the entire CI run blocks forever with no feedback.
-    # Handle subprocess.TimeoutExpired and report it as a failure.
-    return subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        cwd=cwd or PYTHON_ROOT,
-    )
+    """Run a subprocess and capture all output.
+
+    Args:
+        cmd: Command and arguments to run.
+        cwd: Working directory. Defaults to PYTHON_ROOT.
+        timeout: Maximum seconds before killing the process. Defaults to 120.
+
+    Returns:
+        CompletedProcess with captured stdout/stderr. On timeout, returncode
+        is set to 1 and stderr contains the timeout message.
+    """
+    try:
+        return subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=cwd or PYTHON_ROOT,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=1,
+            stdout="",
+            stderr=f"TIMEOUT: command exceeded {timeout}s limit: {' '.join(cmd)}\n",
+        )
 
 
 def update_summary(

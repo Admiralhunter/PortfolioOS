@@ -111,7 +111,7 @@ AI agents **must** follow the PR template and tag system defined in [`.github/pu
 
 ## GitHub API Operations
 
-> **`gh` CLI is NOT available.** This project is primarily developed using Claude Code on the web, where the GitHub CLI (`gh`) is not installed and cannot be used. All GitHub API interactions — creating PRs, commenting on issues, checking workflow status, etc. — **must** use `curl` with the GitHub REST API.
+> **`gh` CLI is NOT available.** This project is primarily developed using Claude Code on the web, where the GitHub CLI (`gh`) is not installed and cannot be used. All GitHub API interactions — creating PRs, commenting on issues, checking workflow status, etc. — **must** use `curl` with the GitHub REST API. For PR creation specifically, prefer the helper script `scripts/create-pr.sh` which handles JSON escaping.
 
 **Authentication:** Use the `GITHUB_TOKEN` environment variable (automatically available in CI and Claude Code web sessions).
 
@@ -164,28 +164,36 @@ curl -s \
 
 **Important:** Replace `OWNER/REPO` with the actual repository owner and name (e.g., `Admiralhunter/PortfolioOS`). Always use `$GITHUB_TOKEN` for authentication — never hardcode tokens.
 
+## Branch Naming
+
+The default branch is `main`. Ensure your local checkout uses `main` (not `master`). If needed: `git branch -m master main`.
+
 ## Common Commands
 
-<!-- TODO(BUILD_TODO#2): pnpm dev/build/test/lint don't exist — no package.json
-     has been created yet. These commands will fail until Phase 0 scaffolding
-     is complete. -->
-<!-- TODO(BUILD_TODO#6): No unified root-level command runs both Python and JS
-     checks. Agents must manually cd between directories. Add a root Makefile
-     or check-all script. -->
 ```bash
-# Development
-pnpm dev                    # Start Electron app in dev mode
-pnpm build                  # Build for production
-pnpm test                   # Run frontend tests (Vitest)
-pnpm lint                   # Lint TypeScript/React code
+# Unified checks (from repo root)
+make check-all              # Lint + typecheck + test (all available toolchains)
+make lint                   # Lint only
+make test                   # Test only
 
-# Python sidecar
+# Python sidecar (manual)
 cd python && uv run pytest  # Run Python tests
 cd python && uv run ruff check .  # Lint Python code
 
+# Frontend (once package.json is scaffolded — not yet available)
+# pnpm dev                  # Start Electron app in dev mode
+# pnpm build                # Build for production
+# pnpm test                 # Run frontend tests (Vitest)
+# pnpm lint                 # Lint TypeScript/React code
+
 # Database
 # DuckDB and SQLite are embedded — no server to start
+
+# Create a PR (helper script handles JSON escaping)
+scripts/create-pr.sh --title "feat: ..." --body-file /tmp/pr.md --head branch-name
 ```
+
+> **Note for agents:** `.reports/` is gitignored and not persisted across sessions. Run `make check-all` at the start of every session to establish a baseline.
 
 ## Data Flow
 

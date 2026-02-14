@@ -94,10 +94,7 @@ line-ending = "lf"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# TODO(BUILD_TODO#18): Also accept "test_*.py" prefix pattern — agents from the
-# TypeScript world may create test_foo.py instead of foo_test.py, and pytest will
-# silently skip them with this strict setting.
-python_files = ["*_test.py"]
+python_files = ["*_test.py", "test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
@@ -118,11 +115,7 @@ branch = true
 parallel = true
 
 [tool.coverage.report]
-# TODO(BUILD_TODO#5): Raise to 80 once implementations land. There is no
-# automated mechanism to trigger this — it will stay at 0 indefinitely
-# unless someone manually bumps it. Consider a CI warning when source
-# lines exceed 500 but fail_under is still 0.
-fail_under = 0
+fail_under = 50
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
