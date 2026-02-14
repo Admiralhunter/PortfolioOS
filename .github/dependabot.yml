@@ -1,0 +1,49 @@
+version: 2
+updates:
+  # Python dependencies (sidecar) — managed by uv
+  - package-ecosystem: "pip"
+    directory: "/python"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - "dependencies"
+      - "python"
+    open-pull-requests-limit: 10
+
+  # Python dependencies (agents) — managed by uv
+  - package-ecosystem: "pip"
+    directory: "/agents"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - "dependencies"
+      - "python"
+    open-pull-requests-limit: 10
+
+  # Node.js dependencies — managed by pnpm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - "dependencies"
+      - "javascript"
+    open-pull-requests-limit: 10
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - "dependencies"
+      - "ci"
+    open-pull-requests-limit: 5
