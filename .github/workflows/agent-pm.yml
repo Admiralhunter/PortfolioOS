@@ -1,0 +1,70 @@
+name: Project Manager Agent
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to triage"
+        required: false
+        type: number
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    name: Triage Issue
+    runs-on: ubuntu-latest
+    # Only run on new issues or when status:needs-triage is added
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.action == 'opened' ||
+      (github.event.action == 'labeled' &&
+       github.event.label.name == 'status:needs-triage')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine issue number
+        id: issue
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run PM Agent via Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            You are the Project Manager agent for PortfolioOS.
+
+            Triage issue #${{ steps.issue.outputs.number }}.
+
+            Instructions:
+            1. Read the issue body using the GitHub API
+            2. Read docs/SPEC.md and docs/ARCHITECTURE.md for project context
+            3. Read CLAUDE.md for coding conventions and constraints
+            4. Analyse the request:
+               - Is it clear enough to implement? Or are there ambiguities?
+               - What priority? (p1=critical, p2=important, p3=nice-to-have)
+               - What scope? (small <50 lines, medium 50-200, large 200+)
+               - Can the Worker agent implement it, or does it need human judgment?
+            5. Post your analysis as a comment on the issue
+            6. Update labels:
+               - Remove status:needs-triage
+               - Add priority:p1/p2/p3
+               - Add status:spec-ready (if clear) or status:blocked (if needs clarification)
+               - Add agent:worker (if suitable for the worker agent)
+               - Add agent:pm
+            7. If the issue needs clarification, list your questions in the comment
+
+            Always be specific about which files need to change and what the
+            expected behavior should be.
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          model: claude-sonnet-4-20250514
+          allowed_tools: "Bash,Read,Glob,Grep"

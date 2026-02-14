@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   todo-scanner:
-    name: TODO Scanner
+    name: TODO Scanner (regex)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,8 +22,8 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
-      - name: Run TODO Scanner
-        run: uv run python -m agents.agents.todo_scanner --repo-root .
+      - name: Run TODO Scanner (original — blackboard only)
+        run: uv run --project agents python -m agents.agents.todo_scanner --repo-root .
 
       - name: Upload blackboard
         uses: actions/upload-artifact@v4
@@ -32,8 +32,8 @@ jobs:
           path: agents/blackboard/blackboard.db
           retention-days: 7
 
-  overlord:
-    name: Overlord Report
+  todo-scanner-llm:
+    name: TODO Scanner (LLM triage)
     runs-on: ubuntu-latest
     needs: todo-scanner
     steps:
@@ -45,14 +45,46 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
-      - name: Download blackboard from TODO Scanner
+      - name: Download blackboard
         uses: actions/download-artifact@v4
         with:
           name: blackboard-todo-scanner
           path: agents/blackboard/
 
+      - name: Run LLM-powered TODO Scanner
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run --project agents python -m agents.agents.todo_scanner_llm --repo-root .
+
+      - name: Upload blackboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackboard-todo-scanner-llm
+          path: agents/blackboard/blackboard.db
+          retention-days: 7
+
+  overlord:
+    name: Overlord Report
+    runs-on: ubuntu-latest
+    needs: todo-scanner-llm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Download blackboard
+        uses: actions/download-artifact@v4
+        with:
+          name: blackboard-todo-scanner-llm
+          path: agents/blackboard/
+
       - name: Run Overlord
-        run: uv run python -m agents.agents.overlord --report-dir agents/reports
+        run: uv run --project agents python -m agents.agents.overlord --report-dir agents/reports
 
       - name: Upload report
         uses: actions/upload-artifact@v4
