@@ -74,6 +74,7 @@ def run_command(
             text=True,
             cwd=cwd or PYTHON_ROOT,
             timeout=timeout,
+            check=False,
         )
     except subprocess.TimeoutExpired:
         return subprocess.CompletedProcess(

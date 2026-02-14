@@ -60,18 +60,45 @@ src = ["portfolioos", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = [
+    # ── Core style ──
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
     "F",      # pyflakes
     "I",      # isort
     "N",      # pep8-naming
     "UP",     # pyupgrade
-    "B",      # flake8-bugbear
-    "A",      # flake8-builtins
-    "SIM",    # flake8-simplify
-    "RUF",    # ruff-specific rules
     "D",      # pydocstyle
     "ANN",    # flake8-annotations
+
+    # ── Bug prevention ──
+    "B",      # flake8-bugbear — common pitfalls and design problems
+    "A",      # flake8-builtins — shadowing builtins
+    "S",      # flake8-bandit — security issues
+    "BLE",    # flake8-blind-except — overly broad exception catches
+
+    # ── Complexity & size (guides AI agents toward smaller code) ──
+    "C90",    # mccabe — cyclomatic complexity per function
+    "PLR",    # pylint refactor — too many branches/args/returns/statements
+    "PLW",    # pylint warnings — unreachable code, useless statements
+
+    # ── Readability & simplicity ──
+    "SIM",    # flake8-simplify — simplifiable constructs
+    "RET",    # flake8-return — unnecessary else after return, etc.
+    "PIE",    # flake8-pie — misc. cleanliness (no-op expressions, etc.)
+    "ERA",    # eradicate — detect commented-out code
+    "FLY",    # flynt — use f-strings instead of format()/% formatting
+    "PERF",   # perflint — performance anti-patterns
+    "FURB",   # refurb — modernization and idiomatic Python
+
+    # ── Testing ──
+    "PT",     # flake8-pytest-style — consistent pytest idioms
+    "ARG",    # flake8-unused-arguments — dead parameters
+
+    # ── Import hygiene ──
+    "TCH",    # flake8-type-checking — move type-only imports behind TYPE_CHECKING
+
+    # ── Ruff extras ──
+    "RUF",    # ruff-specific rules
 ]
 ignore = [
     "D100",   # missing docstring in public module
@@ -79,11 +106,22 @@ ignore = [
     "D203",   # conflicts with D211
     "D213",   # conflicts with D212
     "ANN401", # allow typing.Any for dispatch/handler patterns
+    "S603",   # allow subprocess calls (needed for build scripts)
+    "S607",   # allow partial executable paths in subprocess
 ]
 
+[tool.ruff.lint.mccabe]
+max-complexity = 10  # flag functions with cyclomatic complexity > 10
+
+[tool.ruff.lint.pylint]
+max-args = 8         # financial functions may need many params (portfolio, withdrawal, etc.)
+max-branches = 12    # keep branching manageable
+max-returns = 6      # too many returns = hard to follow
+max-statements = 50  # proxy for function length — forces decomposition
+
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D", "ANN", "S101"]
-"scripts/**" = ["D", "ANN"]
+"tests/**" = ["D", "ANN", "S101", "ARG", "PLR0913", "PLR2004", "TCH"]
+"scripts/**" = ["D", "ANN", "S", "BLE", "T20", "PLR2004"]
 
 [tool.ruff.format]
 quote-style = "double"

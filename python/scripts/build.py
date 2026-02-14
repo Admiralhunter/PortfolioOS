@@ -42,14 +42,11 @@ def run(verbose: bool = False) -> dict[str, Any]:
     artifacts: list[dict[str, Any]] = []
     dist_dir = PYTHON_ROOT / "dist"
     if dist_dir.exists():
-        for f in sorted(dist_dir.iterdir()):
-            if f.is_file() and f.suffix in (".gz", ".whl", ".zip"):
-                artifacts.append(
-                    {
-                        "name": f.name,
-                        "size_bytes": f.stat().st_size,
-                    }
-                )
+        artifacts.extend(
+            {"name": f.name, "size_bytes": f.stat().st_size}
+            for f in sorted(dist_dir.iterdir())
+            if f.is_file() and f.suffix in (".gz", ".whl", ".zip")
+        )
 
     # --- Summary ---
     details: dict[str, Any] = {

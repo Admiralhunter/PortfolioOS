@@ -39,8 +39,31 @@ jobs:
       - name: Type check (mypy)
         run: uv run mypy portfolioos
 
-      - name: Test (pytest)
+      - name: Test + coverage (pytest)
         run: uv run pytest --cov --cov-report=term-missing
+
+  quality-gates:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check file sizes (≤700 effective lines)
+        run: |
+          python scripts/check-file-size.py $(find python/portfolioos python/tests python/scripts src electron \
+            -type f \( -name '*.py' -o -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \) \
+            2>/dev/null || true)
+
+      - name: Check function lengths (≤100 effective lines)
+        run: |
+          python scripts/check-function-length.py $(find python/portfolioos python/tests python/scripts src electron \
+            -type f \( -name '*.py' -o -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \) \
+            2>/dev/null || true)
 
   # JS/TS checks — uncomment once package.json is scaffolded
   # frontend:

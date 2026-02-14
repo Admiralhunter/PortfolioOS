@@ -26,3 +26,28 @@ repos:
   #   hooks:
   #     - id: eslint
   #       types: [javascript, tsx, typescript]
+
+  # ── Quality gates (file size, function length, coverage) ──────────
+  - repo: local
+    hooks:
+      - id: file-size-check
+        name: "Check file size (≤700 effective lines)"
+        entry: python scripts/check-file-size.py
+        language: python
+        types_or: [python, javascript, tsx, ts]
+        pass_filenames: true
+
+      - id: function-length-check
+        name: "Check function length (≤100 effective lines)"
+        entry: python scripts/check-function-length.py
+        language: python
+        types_or: [python, javascript, tsx, ts]
+        pass_filenames: true
+
+      - id: coverage-check
+        name: "Check test coverage (≥50%)"
+        entry: bash scripts/check-coverage.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
