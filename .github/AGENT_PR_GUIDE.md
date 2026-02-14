@@ -140,6 +140,76 @@ Every PR must verify:
 
 ---
 
+## GitHub Operations — `curl` Only (No `gh` CLI)
+
+> **The `gh` CLI is NOT available in this project's development environment.** This project is developed using Claude Code on the web, which does not have `gh` installed. **Do not attempt to use `gh` commands.** All GitHub API interactions must use `curl` against the [GitHub REST API](https://docs.github.com/en/rest).
+
+Authenticate with the `GITHUB_TOKEN` environment variable, which is automatically available in Claude Code web sessions and CI.
+
+### Creating a Pull Request via `curl`
+
+After pushing your branch, create the PR using the GitHub REST API:
+
+```bash
+curl -s -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls \
+  -d "$(cat <<'EOF'
+{
+  "title": "feat: your PR title here",
+  "body": "## Tags\n\n- type:feat\n- scope:frontend\n- risk:low\n\n## Summary\n\nDescription of changes.\n\n## Changes\n\n- `path/to/file.ts` — Description\n",
+  "head": "your-branch-name",
+  "base": "main"
+}
+EOF
+)"
+```
+
+**Important notes:**
+- Replace `OWNER/REPO` with the actual repository path (e.g., `Admiralhunter/PortfolioOS`)
+- The PR body should follow the [PR template](pull_request_template.md) format
+- Use `$GITHUB_TOKEN` for authentication — never hardcode tokens
+- Use a heredoc for the JSON body to handle multi-line content and special characters
+
+### Other Common GitHub API Operations
+
+```bash
+# Get PR details
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls/PR_NUMBER
+
+# Add a comment to a PR or issue
+curl -s -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/issues/PR_NUMBER/comments \
+  -d '{"body": "Comment text here"}'
+
+# List PR review comments
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls/PR_NUMBER/comments
+
+# Check CI status for a commit
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/commits/COMMIT_SHA/check-runs
+
+# Merge a pull request
+curl -s -X PUT \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls/PR_NUMBER/merge \
+  -d '{"merge_method": "squash"}'
+```
+
+---
+
 ## Agent Workflow
 
 When an AI agent opens a PR on PortfolioOS, it must follow this process:
@@ -215,6 +285,32 @@ unnecessary trading.
 
 Closes #42
 ```
+
+### Step 8: Open the PR via `curl`
+
+**Do NOT use `gh` CLI** — it is not available. Use `curl` with the GitHub REST API:
+
+```bash
+# Push your branch first
+git push -u origin your-branch-name
+
+# Create the PR
+curl -s -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls \
+  -d "$(cat <<'EOF'
+{
+  "title": "feat: your PR title",
+  "body": "Paste your filled-out PR template here",
+  "head": "your-branch-name",
+  "base": "main"
+}
+EOF
+)"
+```
+
+See the [GitHub Operations](#github-operations--curl-only-no-gh-cli) section above for the full API reference.
 
 ---
 

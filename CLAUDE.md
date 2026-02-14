@@ -109,6 +109,61 @@ AI agents **must** follow the PR template and tag system defined in [`.github/pu
 - Missing data must be handled explicitly — never silently fill gaps with zeros or interpolation without flagging it
 - Cloud LLM providers are opt-in only; LM Studio (local) is always the default
 
+## GitHub API Operations
+
+> **`gh` CLI is NOT available.** This project is primarily developed using Claude Code on the web, where the GitHub CLI (`gh`) is not installed and cannot be used. All GitHub API interactions — creating PRs, commenting on issues, checking workflow status, etc. — **must** use `curl` with the GitHub REST API.
+
+**Authentication:** Use the `GITHUB_TOKEN` environment variable (automatically available in CI and Claude Code web sessions).
+
+**Common operations:**
+
+```bash
+# Create a pull request
+curl -s -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls \
+  -d '{
+    "title": "feat: add portfolio rebalancing calculator",
+    "body": "## Summary\n\nDescription here.\n\n## Tags\n\n- type:feat\n- scope:frontend\n- risk:low",
+    "head": "your-branch-name",
+    "base": "main"
+  }'
+
+# List open pull requests
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls
+
+# Get a specific pull request
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/pulls/123
+
+# Add a comment to a pull request
+curl -s -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/issues/123/comments \
+  -d '{"body": "Your comment here"}'
+
+# List issues
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/issues
+
+# Check workflow runs
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/actions/runs
+```
+
+**Important:** Replace `OWNER/REPO` with the actual repository owner and name (e.g., `Admiralhunter/PortfolioOS`). Always use `$GITHUB_TOKEN` for authentication — never hardcode tokens.
+
 ## Common Commands
 
 ```bash
