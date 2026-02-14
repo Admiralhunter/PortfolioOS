@@ -1,0 +1,284 @@
+# Agent PR Guide — PortfolioOS
+
+This document defines the pull request process for AI coding agents working on PortfolioOS. It is the authoritative reference for tag definitions, quality gates, and enforcement rules.
+
+Human reviewers: use this guide to evaluate whether an agent has done its due diligence.
+
+---
+
+## Tag System
+
+Every PR must include tags from three categories. Tags serve as structured metadata so reviewers (human or automated) can quickly assess what a PR does, where it touches, and how risky it is.
+
+### Change Type (exactly 1 required)
+
+| Tag | When to use |
+|-----|-------------|
+| `type:feat` | Adding a new user-facing feature or capability that did not exist before. |
+| `type:fix` | Correcting a bug — something that was working incorrectly. Must reference the issue or describe the broken behavior. |
+| `type:refactor` | Restructuring existing code without changing its external behavior. No new features, no bug fixes. Tests should remain unchanged. |
+| `type:docs` | Changes limited to documentation files (`.md`, JSDoc, docstrings, comments). No functional code changes. |
+| `type:test` | Adding, updating, or fixing tests. No production code changes beyond what's needed to make tests possible (e.g., exporting a function). |
+| `type:chore` | Build config, CI/CD, dependency updates, tooling, formatting. No production logic changes. |
+| `type:perf` | Performance optimization. Must describe the bottleneck and the improvement (ideally with measurements). |
+| `type:security` | Security fix or hardening. Must describe the vulnerability or attack vector addressed. |
+
+**Rule:** If a PR spans multiple types (e.g., a feature that also fixes a bug), pick the *primary* intent. If genuinely split, break it into separate PRs.
+
+### Scope (1 or more required)
+
+| Tag | What it covers |
+|-----|----------------|
+| `scope:frontend` | React components, hooks, stores, styles, renderer-process code under `src/`. |
+| `scope:backend` | Electron main process code under `electron/`, IPC handlers, Node.js services. |
+| `scope:database` | DuckDB or SQLite schemas, queries, migrations, database access layer under `electron/db/`. |
+| `scope:python` | Python sidecar code under `python/`, including simulation, market data, and analysis modules. |
+| `scope:llm` | LLM provider integration, prompt engineering, model configuration under `electron/llm/`. |
+| `scope:config` | Project configuration: `package.json`, `tsconfig.json`, `pyproject.toml`, Vite config, Tailwind config, environment files. |
+| `scope:ci` | GitHub Actions workflows, CI/CD pipelines, release automation under `.github/workflows/`. |
+
+**Rule:** Pick all scopes that apply. A PR touching React components and Electron IPC handlers should have both `scope:frontend` and `scope:backend`.
+
+### Risk (exactly 1 required)
+
+| Tag | Criteria |
+|-----|----------|
+| `risk:low` | Change is isolated to a single module. No shared interfaces modified. No data schema changes. Easily reversible. |
+| `risk:medium` | Touches shared utilities, modifies interfaces used by multiple modules, or changes behavior that other code depends on. |
+| `risk:high` | Breaking API changes, database schema migrations, security-sensitive changes, changes to financial calculation logic, or modifications to the IPC contract between renderer and main process. |
+
+**Rule:** When in doubt, round up. A `risk:medium` wrongly tagged as `risk:low` is worse than the reverse.
+
+---
+
+## Quality Gates
+
+These are hard limits. A PR that violates them should not be merged without explicit justification.
+
+### 1. File Size: 700 Lines Maximum
+
+Every source file (`.ts`, `.tsx`, `.py`, `.js`, `.jsx`) must be under 700 lines.
+
+**Why:** Files over 700 lines are difficult to review, test, and maintain. They usually indicate a module is doing too much.
+
+**How to check:**
+```bash
+# Find files over 700 lines in the diff
+git diff --name-only origin/main | xargs wc -l | awk '$1 > 700'
+```
+
+**If a file exceeds 700 lines:**
+1. Split it into focused modules with single responsibilities.
+2. If splitting is genuinely impractical (e.g., a generated file, a comprehensive test suite), document the justification in the "Size Violations" section of the PR.
+
+### 2. Function Length: 100 Lines Maximum
+
+Every function, method, or arrow function must be under 100 lines.
+
+**Why:** Long functions are hard to understand, test, and debug. They usually do too many things.
+
+**How to check:**
+```bash
+# For TypeScript/JavaScript — look for functions in changed files
+# Agent should review each function in its diff
+```
+
+**If a function exceeds 100 lines:**
+1. Extract logical blocks into named helper functions.
+2. Use early returns to reduce nesting.
+3. If the function is inherently sequential (e.g., a complex state machine), document the justification in the "Size Violations" section.
+
+### 3. DRY Compliance
+
+Before writing new utility functions, helpers, or abstractions:
+
+1. **Search the codebase** for existing implementations.
+2. **Check `src/lib/`** for shared utilities.
+3. **Check `src/hooks/`** for shared React hooks.
+4. **Check `electron/services/`** for shared backend logic.
+
+If similar logic exists in 3+ places, extract it. If you're writing something that feels generic (date formatting, validation, error handling), it probably already exists or should be shared.
+
+### 4. Documentation Standards
+
+| What | Requirement |
+|------|-------------|
+| Public functions | JSDoc (TS/JS) or docstring (Python) with description, params, and return type |
+| Interfaces/types | JSDoc describing purpose and when to use |
+| Complex algorithms | Inline comments explaining the *why* behind non-obvious logic |
+| Financial calculations | Citation to methodology (e.g., "Bengen 1994", "Trinity Study 1998") |
+| Configuration options | Document in relevant config section or README |
+| IPC channels | Document message format and expected response |
+
+**Do not over-document.** Self-explanatory code (`getUserById(id)`) does not need a comment. Reserve comments for non-obvious decisions, trade-offs, and domain-specific logic.
+
+### 5. Security Checklist
+
+Every PR must verify:
+
+| Check | Details |
+|-------|---------|
+| No hardcoded secrets | No API keys, passwords, tokens, or credentials anywhere in code, comments, or test fixtures |
+| Input validation | All user input and external data is validated at system boundaries |
+| No unsafe patterns | No `eval()`, `new Function()`, `innerHTML`, `dangerouslySetInnerHTML`, or `shell: true` without sanitization |
+| IPC least-privilege | New IPC channels expose minimal necessary functionality |
+| Type safety | No `any` types introduced without documented justification |
+| Dependency audit | New dependencies checked for known CVEs and license compatibility (PolyForm NC 1.0.0) |
+| Privacy compliance | No telemetry, tracking, analytics, or data exfiltration. Cloud LLM calls require explicit consent flow. |
+| SQL injection | All database queries use parameterized statements, never string concatenation |
+
+### 6. Maintainability Standards
+
+| Standard | Enforcement |
+|----------|-------------|
+| Consistent naming | camelCase (JS/TS vars/functions), PascalCase (components/types), snake_case (Python) |
+| No dead code | Remove commented-out code, unused imports, unreachable branches |
+| Explicit errors | No empty `catch {}` blocks, no swallowed promises, no silent failures |
+| Single responsibility | Each module, class, and function has one clear purpose |
+| Follow existing patterns | Match the codebase's existing approach before introducing new patterns |
+| Conventional commits | Commit messages follow `type: description` format |
+
+---
+
+## Agent Workflow
+
+When an AI agent opens a PR on PortfolioOS, it must follow this process:
+
+### Step 1: Read Before Writing
+
+Before modifying any file, **read the entire file** (or at minimum the surrounding context) to understand:
+- What the file does
+- What patterns it uses
+- What other code depends on it
+
+### Step 2: Search Before Creating
+
+Before creating any new function, utility, hook, or module:
+- Search the codebase for existing implementations
+- Check if the functionality already exists under a different name
+- Verify the new code doesn't duplicate logic elsewhere
+
+### Step 3: Write the Code
+
+Follow all conventions in [CLAUDE.md](../CLAUDE.md) and the quality gates above.
+
+### Step 4: Self-Review the Diff
+
+Before opening the PR, review your own changes:
+
+```bash
+git diff --stat        # Check which files changed and by how much
+git diff               # Read every line of the diff
+```
+
+Look for:
+- Unintended changes (whitespace, formatting, unrelated modifications)
+- Debug code (`console.log`, `print()`, `debugger`)
+- Leftover artifacts (TODO comments without issue refs, placeholder text)
+- Files that grew too large
+- Functions that grew too long
+
+### Step 5: Run Verification
+
+Run the full test and lint suite:
+
+```bash
+pnpm lint
+pnpm test
+pnpm build
+# If Python changes:
+cd python && uv run pytest
+cd python && uv run ruff check .
+```
+
+**Do not check the "tests pass" box unless you actually ran the commands and they passed.** Claiming tests pass without running them is a serious trust violation.
+
+### Step 6: Fill Out the PR Template
+
+Complete every section of the [PR template](pull_request_template.md):
+1. Select exactly the right tags — do not leave all options listed
+2. Write a genuine summary, not a restated diff
+3. Check only the boxes you actually verified
+4. Report any size violations honestly
+5. Complete the agent attestation
+
+### Step 7: Commit Message
+
+Use conventional commit format matching the `type` tag:
+
+```
+feat: add portfolio rebalancing calculator
+
+Implements automatic rebalancing suggestions based on target allocation
+percentages. Uses threshold-based triggers (5% drift) to minimize
+unnecessary trading.
+
+Closes #42
+```
+
+---
+
+## Tag Selection Examples
+
+### Example 1: Adding a new chart component
+
+```
+type:feat
+scope:frontend
+risk:low
+```
+
+### Example 2: Fixing a Monte Carlo calculation error
+
+```
+type:fix
+scope:python
+risk:high  (financial calculation correctness)
+```
+
+### Example 3: Splitting a large service file into modules
+
+```
+type:refactor
+scope:backend
+risk:medium  (touches shared imports)
+```
+
+### Example 4: Adding CI pipeline
+
+```
+type:chore
+scope:ci
+risk:low
+```
+
+### Example 5: Fixing XSS vulnerability in user input handling
+
+```
+type:security
+scope:frontend, scope:backend
+risk:high
+```
+
+### Example 6: Optimizing DuckDB query performance
+
+```
+type:perf
+scope:database
+risk:medium
+```
+
+---
+
+## Enforcement
+
+These rules exist because AI agents can generate plausible-looking PRs that pass superficial review but contain subtle issues: duplicated logic, oversized files, untested edge cases, or security gaps.
+
+The tag system and checklists force agents to slow down, categorize their work, and verify quality before requesting review. Reviewers should:
+
+1. **Check tags match the actual changes** — a `type:refactor` that changes behavior is mislabeled.
+2. **Verify checked boxes** — spot-check that the agent actually did what it claims.
+3. **Review size violations** — any listed exception should have a compelling justification.
+4. **Validate the attestation** — if the agent claims it ran tests, verify the test output is consistent with the changes.
+
+PRs that skip required sections, leave all tag options listed (instead of selecting), or have unchecked boxes in critical sections should be sent back for revision.
