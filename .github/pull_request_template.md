@@ -4,6 +4,10 @@
   This template is designed for GenAI coding agents (Claude Code, Copilot, etc.).
   All sections are REQUIRED unless marked [optional].
   See .github/AGENT_PR_GUIDE.md for full tag definitions and enforcement rules.
+
+  IMPORTANT: The `gh` CLI is NOT available in this project's development environment.
+  PRs must be created using `curl` with the GitHub REST API.
+  See .github/AGENT_PR_GUIDE.md for curl examples and the full API reference.
 -->
 
 ## Tags
