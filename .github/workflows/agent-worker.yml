@@ -1,0 +1,91 @@
+name: Worker Agent
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to implement"
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  implement:
+    name: Implement Task
+    runs-on: ubuntu-latest
+    # Only run when status:spec-ready is added alongside agent:worker
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' &&
+       github.event.label.name == 'status:spec-ready')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine issue number
+        id: issue
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for agent:worker label
+        id: check
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          LABELS=$(curl -sf \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}/labels" \
+            | python3 -c "import sys,json; labels=[l['name'] for l in json.load(sys.stdin)]; print('has_worker=' + str('agent:worker' in labels).lower())")
+          echo "$LABELS" >> "$GITHUB_OUTPUT"
+
+      - name: Run Worker Agent via Claude Code Action
+        if: >
+          github.event_name == 'workflow_dispatch' ||
+          steps.check.outputs.has_worker == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            You are the Worker agent for PortfolioOS.
+
+            Implement the task described in issue #${{ steps.issue.outputs.number }}.
+
+            Instructions:
+            1. Read the issue body (it contains a spec from the PM agent)
+            2. Read CLAUDE.md for all coding conventions and constraints
+            3. Plan your implementation:
+               - List all files to create or modify
+               - Keep changes minimal — do the least work that satisfies the spec
+               - Max 700 lines per file, max 100 lines per function
+            4. Implement the changes following project conventions:
+               - TypeScript: strict mode, no `any`, camelCase, PascalCase for components
+               - Python: type hints, snake_case, Black formatting
+               - Conventional commits: feat:, fix:, refactor:, etc.
+            5. Write tests for your changes
+            6. Run `make check-all` and fix any failures
+            7. Commit your changes with a descriptive message
+            8. Create a PR that references the issue:
+               - Use scripts/create-pr.sh or curl (gh CLI is NOT available)
+               - Include "Closes #${{ steps.issue.outputs.number }}" in the PR body
+               - Follow the PR template in .github/pull_request_template.md
+            9. Comment on the issue with a link to the PR
+            10. Add label status:review and remove status:spec-ready
+
+            CRITICAL:
+            - NEVER add telemetry, tracking, or data exfiltration
+            - NEVER store user credentials
+            - NEVER merge your own PR
+            - NEVER push to main directly
+            - Run make check-all before creating the PR
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          model: claude-opus-4-6
+          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
