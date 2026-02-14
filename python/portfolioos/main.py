@@ -31,6 +31,9 @@ def dispatch(method: str, params: dict[str, Any]) -> Any:
         ValueError: If the method is not recognized.
 
     """
+    # TODO(BUILD_TODO#7): handlers dict is empty — every call will raise
+    # ValueError("Unknown method"). Wire up simulation/market/analysis
+    # modules as they are implemented, and add tests for dispatch routing.
     handlers: dict[str, Any] = {}
     if method not in handlers:
         msg = f"Unknown method: {method}"

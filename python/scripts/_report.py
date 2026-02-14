@@ -56,6 +56,10 @@ def run_command(
     cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a subprocess and capture all output."""
+    # TODO(BUILD_TODO#8): Add a timeout parameter (default 120s). If mypy,
+    # pytest, or ruff hangs (e.g., infinite import loop, network stall on
+    # yfinance import), the entire CI run blocks forever with no feedback.
+    # Handle subprocess.TimeoutExpired and report it as a failure.
     return subprocess.run(
         cmd,
         capture_output=True,

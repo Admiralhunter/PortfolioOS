@@ -15,6 +15,11 @@
 <!--
   REQUIRED: Select ALL applicable tags. You MUST pick at least one from each category.
   Delete the tags that do NOT apply. Keep only the ones that describe this PR.
+
+  TODO(BUILD_TODO#11): This "delete what doesn't apply" format is error-prone
+  for LLM agents. They are better at filling in values than deleting lines.
+  Consider switching to a fill-in-the-blank format:
+    **Change type:** (write one: feat/fix/refactor/docs/test/chore/perf/security)
 -->
 
 ### Change Type (pick exactly 1)
@@ -151,6 +156,9 @@
   Include commands run and their output summary.
 -->
 
+<!-- TODO(BUILD_TODO#2): pnpm lint/test/build don't exist yet (no package.json).
+     These checkboxes are unconditional but the commands will fail. Add "if
+     applicable" language or scaffold stub scripts in package.json. -->
 - [ ] `pnpm lint` — passes
 - [ ] `pnpm test` — passes
 - [ ] `pnpm build` — passes
@@ -195,6 +203,10 @@ N/A
 <!--
   REQUIRED for AI agents. This section confirms the agent performed
   genuine verification rather than rubber-stamping checkboxes.
+
+  TODO(BUILD_TODO#12): This attestation is unverifiable without CI. Every LLM
+  will check all boxes regardless. Replace with CI-verified status checks, or
+  require agents to paste actual command output as evidence.
 -->
 
 - [ ] I have **read every file** I modified before making changes
