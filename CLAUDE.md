@@ -195,6 +195,59 @@ scripts/create-pr.sh --title "feat: ..." --body-file /tmp/pr.md --head branch-na
 
 > **Note for agents:** `.reports/` is gitignored and not persisted across sessions. Run `make check-all` at the start of every session to establish a baseline.
 
+## Docker Build (Claude Code Web)
+
+> **This section is for AI agents running in Claude Code web sandboxes.** Local developers can use `docker build -t portfolioos .` directly.
+
+Claude Code web containers route all traffic through a TLS-intercepting egress proxy. Docker is installed but the daemon is not running, iptables/nftables are unavailable, and there is no DNS — all name resolution happens through the proxy. Builds require special setup:
+
+### 1. Start the Docker daemon (vfs storage driver, no iptables)
+
+```bash
+# Clean up any stale docker0 interface from previous sessions
+ifconfig docker0 down 2>/dev/null
+brctl delbr docker0 2>/dev/null   # apt-get install -y bridge-utils if needed
+
+# Start dockerd — vfs is the only storage driver that works in the sandbox
+dockerd --storage-driver vfs --iptables=false --ip6tables=false > /tmp/dockerd.log 2>&1 &
+sleep 5
+tail -3 /tmp/dockerd.log   # confirm "API listen on /var/run/docker.sock"
+```
+
+### 2. Copy the proxy CA certificates
+
+The egress proxy terminates TLS with its own CA. Build containers need these certs or every HTTPS request will fail with `CERTIFICATE_VERIFY_FAILED`.
+
+```bash
+mkdir -p extra-ca-certs
+cp /usr/local/share/ca-certificates/*.crt extra-ca-certs/
+```
+
+### 3. Build with proxy args and host networking
+
+```bash
+docker build --network=host --allow network.host \
+  --build-arg HTTP_PROXY="$HTTP_PROXY" \
+  --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+  --build-arg NO_PROXY="$NO_PROXY" \
+  --build-arg http_proxy="$http_proxy" \
+  --build-arg https_proxy="$https_proxy" \
+  --build-arg no_proxy="$NO_PROXY" \
+  -t portfolioos .
+```
+
+**Important notes:**
+- The `vfs` storage driver copies full filesystem trees for every layer, so builds are slow (~20 min). Use `sleep` + `tail /tmp/docker-build.log` to poll progress if running in the background.
+- `--network=host` and `--allow network.host` are both required so BuildKit RUN steps can reach the proxy at its internal IP.
+- Both upper- and lower-case proxy vars are passed because different tools (apt, pip/uv, npm/corepack, curl) check different casing.
+- The `extra-ca-certs/` directory is gitignored and must be re-created each session.
+
+### 4. Clean up after build
+
+```bash
+rm -rf extra-ca-certs   # do not commit proxy CA certs
+```
+
 ## Data Flow
 
 ```
