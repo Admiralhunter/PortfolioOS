@@ -14,7 +14,7 @@ jobs:
     name: TODO Scanner (regex)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: todo-scanner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: todo-scanner-llm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
