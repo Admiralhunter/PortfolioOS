@@ -130,6 +130,53 @@ class TestFindings:
             )
 
 
+    def test_deterministic_ids_across_fresh_databases(
+        self, tmp_path: Path
+    ) -> None:
+        """Same finding produces the same ID in two independent databases."""
+        db1 = Blackboard(tmp_path / "db1.db")
+        db2 = Blackboard(tmp_path / "db2.db")
+
+        fid1 = db1.add_finding(
+            agent_name="scanner",
+            severity="high",
+            category="todo",
+            title="FIXME: broken calc",
+            description="Details",
+            file_path="src/calc.py",
+            line_number=10,
+        )
+        fid2 = db2.add_finding(
+            agent_name="scanner",
+            severity="high",
+            category="todo",
+            title="FIXME: broken calc",
+            description="Details",
+            file_path="src/calc.py",
+            line_number=10,
+        )
+        assert fid1 == fid2
+
+    def test_different_findings_get_different_ids(self, bb: Blackboard) -> None:
+        fid1 = bb.add_finding(
+            agent_name="scanner",
+            severity="high",
+            category="todo",
+            title="FIXME: first",
+            description="d",
+            file_path="a.py",
+        )
+        fid2 = bb.add_finding(
+            agent_name="scanner",
+            severity="high",
+            category="todo",
+            title="FIXME: second",
+            description="d",
+            file_path="a.py",
+        )
+        assert fid1 != fid2
+
+
 class TestTaskQueue:
     def test_add_and_list(self, bb: Blackboard) -> None:
         tid = bb.add_task(
@@ -171,6 +218,41 @@ class TestTaskQueue:
         tasks = bb.get_tasks()
         titles = [t["title"] for t in tasks]
         assert titles == ["High", "Med", "Low"]
+
+    def test_idempotent_task_add(self, bb: Blackboard) -> None:
+        """Adding the same task twice should update, not duplicate."""
+        tid1 = bb.add_task(
+            source_agent="scanner",
+            title="Fix it",
+            description="v1",
+            priority=3,
+        )
+        tid2 = bb.add_task(
+            source_agent="scanner",
+            title="Fix it",
+            description="v2",
+            priority=2,
+        )
+        assert tid1 == tid2
+        tasks = bb.get_tasks()
+        assert len(tasks) == 1
+        assert tasks[0]["description"] == "v2"
+        assert tasks[0]["priority"] == 2
+
+    def test_deterministic_task_ids_across_databases(
+        self, tmp_path: Path
+    ) -> None:
+        """Same task produces the same ID in independent databases."""
+        db1 = Blackboard(tmp_path / "db1.db")
+        db2 = Blackboard(tmp_path / "db2.db")
+
+        tid1 = db1.add_task(
+            source_agent="scanner", title="Fix it", description="d",
+        )
+        tid2 = db2.add_task(
+            source_agent="scanner", title="Fix it", description="d",
+        )
+        assert tid1 == tid2
 
 
 class TestAgentLog:

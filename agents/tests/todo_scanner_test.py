@@ -176,3 +176,29 @@ class TestRun:
         bb = Blackboard(db_path)
         findings = bb.get_findings(agent_name="todo_scanner")
         assert len(findings) == 1  # no duplicates
+        tasks = bb.get_tasks()
+        assert len(tasks) == 1  # no duplicate tasks
+
+    def test_deterministic_ids_across_fresh_databases(
+        self, tmp_path: Path
+    ) -> None:
+        """Same TODO produces same finding/task IDs in independent DBs."""
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("# TODO: do something\n")
+
+        db1 = tmp_path / "db1.db"
+        db2 = tmp_path / "db2.db"
+        run(tmp_path, db1)
+        run(tmp_path, db2)
+
+        bb1 = Blackboard(db1)
+        bb2 = Blackboard(db2)
+
+        findings1 = bb1.get_findings(agent_name="todo_scanner")
+        findings2 = bb2.get_findings(agent_name="todo_scanner")
+        assert findings1[0]["id"] == findings2[0]["id"]
+
+        tasks1 = bb1.get_tasks()
+        tasks2 = bb2.get_tasks()
+        assert tasks1[0]["id"] == tasks2[0]["id"]
