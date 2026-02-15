@@ -14,6 +14,12 @@
 #       --build-arg HTTP_PROXY="$HTTP_PROXY" \
 #       --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
 #       -t portfolioos .
+#
+# Claude Code web:
+#   Web sandbox containers route all traffic through an egress proxy and lack
+#   iptables/nftables support. The Docker daemon must be started manually with
+#   the vfs storage driver, and builds require host networking + proxy args.
+#   See CLAUDE.md "Docker Build (Claude Code Web)" for step-by-step instructions.
 
 # ---------------------------------------------------------------------------
 # Stage 1: Install Python dependencies
