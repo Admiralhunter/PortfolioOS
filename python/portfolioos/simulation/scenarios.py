@@ -84,7 +84,7 @@ class ScenarioConfig:
     seed: int | None = None
 
 
-def run_scenario(
+def run_scenario(  # noqa: PLR0913
     initial_portfolio: float,
     annual_withdrawal: float,
     return_distribution: list[float] | NDArray[np.float64],
@@ -121,7 +121,9 @@ def run_scenario(
         life_events = []
 
     returns_arr = np.asarray(return_distribution, dtype=np.float64)
-    returns = bootstrap_returns(returns_arr, n_samples=n_trials, n_years=n_years, seed=seed)
+    returns = bootstrap_returns(
+        returns_arr, n_samples=n_trials, n_years=n_years, seed=seed
+    )
 
     # Build life events index for quick lookup
     events_by_year: dict[int, list[dict[str, Any]]] = {}
@@ -149,9 +151,7 @@ def run_scenario(
         event_adjustment = _compute_event_adjustment(events_by_year.get(yr, []))
 
         grown = portfolio[:, yr] * (1.0 + returns[:, yr])
-        portfolio[:, yr + 1] = np.maximum(
-            grown - withdrawal + event_adjustment, 0.0
-        )
+        portfolio[:, yr + 1] = np.maximum(grown - withdrawal + event_adjustment, 0.0)
 
     success_rate = float(np.mean(portfolio[:, -1] > 0))
 
@@ -168,7 +168,7 @@ def run_scenario(
     }
 
 
-def sensitivity_analysis(
+def sensitivity_analysis(  # noqa: PLR0913
     initial_portfolio: float,
     annual_withdrawal: float,
     return_distribution: list[float] | NDArray[np.float64],

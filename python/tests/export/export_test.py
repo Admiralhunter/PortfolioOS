@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 import numpy as np
 import pytest
-
 from portfolioos.export.csv_export import (
     export_holdings_csv,
     export_simulation_csv,
@@ -23,8 +21,13 @@ class TestExportHoldingsCSV:
 
     def test_basic_export(self):
         holdings = [
-            {"account_id": "acc1", "symbol": "AAPL", "asset_type": "stock",
-             "shares": 100, "cost_basis": 15000.0},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "asset_type": "stock",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            },
         ]
         csv_str = export_holdings_csv(holdings)
         assert "AAPL" in csv_str
@@ -33,8 +36,13 @@ class TestExportHoldingsCSV:
 
     def test_export_to_file(self, tmp_path):
         holdings = [
-            {"account_id": "acc1", "symbol": "AAPL", "asset_type": "stock",
-             "shares": 100, "cost_basis": 15000.0},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "asset_type": "stock",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            },
         ]
         out_path = str(tmp_path / "holdings.csv")
         result = export_holdings_csv(holdings, output_path=out_path)
@@ -46,15 +54,27 @@ class TestExportHoldingsCSV:
         csv_str = export_holdings_csv([])
         assert "# Holdings Export" in csv_str
         # Only metadata + header, no data rows
-        lines = [l for l in csv_str.strip().split("\n") if not l.startswith("#")]
+        lines = [
+            line for line in csv_str.strip().split("\n") if not line.startswith("#")
+        ]
         assert len(lines) == 1  # Just the header
 
     def test_multiple_holdings(self):
         holdings = [
-            {"account_id": "acc1", "symbol": "AAPL", "asset_type": "stock",
-             "shares": 100, "cost_basis": 15000.0},
-            {"account_id": "acc1", "symbol": "GOOGL", "asset_type": "stock",
-             "shares": 50, "cost_basis": 7000.0},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "asset_type": "stock",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            },
+            {
+                "account_id": "acc1",
+                "symbol": "GOOGL",
+                "asset_type": "stock",
+                "shares": 50,
+                "cost_basis": 7000.0,
+            },
         ]
         csv_str = export_holdings_csv(holdings)
         assert "AAPL" in csv_str
@@ -66,9 +86,16 @@ class TestExportTransactionsCSV:
 
     def test_basic_export(self):
         transactions = [
-            {"account_id": "acc1", "symbol": "AAPL", "type": "buy",
-             "date": "2024-01-15", "quantity": 100, "price": 150.0,
-             "fees": 9.99, "notes": ""},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "type": "buy",
+                "date": "2024-01-15",
+                "quantity": 100,
+                "price": 150.0,
+                "fees": 9.99,
+                "notes": "",
+            },
         ]
         csv_str = export_transactions_csv(transactions)
         assert "AAPL" in csv_str
@@ -78,13 +105,20 @@ class TestExportTransactionsCSV:
     def test_round_trip(self):
         """Export then reimport and verify data matches."""
         original = [
-            {"account_id": "acc1", "symbol": "AAPL", "type": "buy",
-             "date": "2024-01-15", "quantity": 100, "price": 150.0,
-             "fees": 9.99, "notes": "test trade"},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "type": "buy",
+                "date": "2024-01-15",
+                "quantity": 100,
+                "price": 150.0,
+                "fees": 9.99,
+                "notes": "test trade",
+            },
         ]
         csv_str = export_transactions_csv(original)
         # Remove metadata comment lines for reimport
-        data_lines = [l for l in csv_str.split("\n") if not l.startswith("#")]
+        data_lines = [line for line in csv_str.split("\n") if not line.startswith("#")]
         clean_csv = "\n".join(data_lines)
         reimported = parse_csv(csv_content=clean_csv, account_id="acc1")
         assert len(reimported) == 1

@@ -19,6 +19,9 @@ from typing import Any
 # Holding period threshold for long-term capital gains (days)
 _LONG_TERM_DAYS = 365
 
+# Floating-point tolerance for share comparisons
+_EPSILON = 1e-9
+
 
 @dataclass
 class TaxLot:
@@ -166,7 +169,7 @@ class CostBasisTracker:
 
         """
         total_available = self.get_total_shares()
-        if quantity > total_available + 1e-9:
+        if quantity > total_available + _EPSILON:
             msg = (
                 f"Insufficient shares: requested {quantity}, "
                 f"available {total_available}"
@@ -223,12 +226,12 @@ class CostBasisTracker:
 
         indices = list(range(len(self.lots)))
         if reverse:
-            indices = indices[::-1]
+            indices.reverse()
 
         active = [(i, self.lots[i]) for i in indices if self.lots[i].remaining_qty > 0]
 
         for _idx, lot in active:
-            if remaining_to_sell <= 1e-9:
+            if remaining_to_sell <= _EPSILON:
                 break
 
             sell_from_lot = min(lot.remaining_qty, remaining_to_sell)
@@ -279,7 +282,7 @@ class CostBasisTracker:
         # Reduce shares proportionally from all lots (FIFO order)
         remaining_to_sell = quantity
         for lot in self.lots:
-            if remaining_to_sell <= 1e-9:
+            if remaining_to_sell <= _EPSILON:
                 break
             if lot.remaining_qty <= 0:
                 continue
@@ -318,7 +321,7 @@ class CostBasisTracker:
         disposed: list[DisposedLot] = []
 
         for lid in lot_ids:
-            if remaining_to_sell <= 1e-9:
+            if remaining_to_sell <= _EPSILON:
                 break
 
             lot = lot_map[lid]
@@ -344,10 +347,9 @@ class CostBasisTracker:
             lot.remaining_qty -= sell_from_lot
             remaining_to_sell -= sell_from_lot
 
-        if remaining_to_sell > 1e-9:
+        if remaining_to_sell > _EPSILON:
             msg = (
-                f"Insufficient shares in specified lots: "
-                f"still need {remaining_to_sell}"
+                f"Insufficient shares in specified lots: still need {remaining_to_sell}"
             )
             raise ValueError(msg)
 
@@ -370,7 +372,7 @@ class CostBasisTracker:
 
         """
         if as_of_date is None:
-            as_of_date = datetime.now().strftime("%Y-%m-%d")  # noqa: DTZ005
+            as_of_date = datetime.now().strftime("%Y-%m-%d")
 
         gains: list[UnrealizedGain] = []
         for lot in self.lots:
@@ -457,7 +459,7 @@ def _holding_period(acquire_date: str, sell_date: str) -> str:
         "long_term" if held > 365 days, otherwise "short_term".
 
     """
-    acq = datetime.strptime(acquire_date, "%Y-%m-%d")  # noqa: DTZ007
-    sell = datetime.strptime(sell_date, "%Y-%m-%d")  # noqa: DTZ007
+    acq = datetime.strptime(acquire_date, "%Y-%m-%d")
+    sell = datetime.strptime(sell_date, "%Y-%m-%d")
     days_held = (sell - acq).days
     return "long_term" if days_held > _LONG_TERM_DAYS else "short_term"

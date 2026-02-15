@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from portfolioos.portfolio.cost_basis import CostBasisTracker
 
 
@@ -135,9 +134,7 @@ class TestSpecificID:
         id0 = tracker.add_buy("2023-01-01", 10, 50.0)
         tracker.add_buy("2024-01-01", 100, 70.0)
         with pytest.raises(ValueError, match="Insufficient shares in specified"):
-            tracker.sell(
-                "2024-06-01", 50, 80.0, method="specific_id", lot_ids=[id0]
-            )
+            tracker.sell("2024-06-01", 50, 80.0, method="specific_id", lot_ids=[id0])
 
 
 class TestHoldingPeriod:
@@ -195,9 +192,7 @@ class TestPartialAndEdge:
         tracker = CostBasisTracker()
         tracker.add_buy("2023-01-01", 100, 50.0, fees=10.0)
         disposed = tracker.sell("2024-06-01", 100, 80.0, fees=9.99, method="fifo")
-        # Proceeds: 100 * 80 - 9.99 = 7990.01
         assert disposed[0].proceeds == pytest.approx(7990.01)
-        # Cost: 100 * 50 + 10 = 5010
         assert disposed[0].cost_basis == pytest.approx(5010.0)
 
 

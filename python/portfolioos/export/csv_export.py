@@ -13,8 +13,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-
 
 def export_holdings_csv(
     holdings: list[dict[str, Any]],
@@ -65,8 +63,14 @@ def export_transactions_csv(
 
     """
     fieldnames = [
-        "account_id", "symbol", "type", "date",
-        "quantity", "price", "fees", "notes",
+        "account_id",
+        "symbol",
+        "type",
+        "date",
+        "quantity",
+        "price",
+        "fees",
+        "notes",
     ]
     output = io.StringIO()
 
@@ -115,11 +119,7 @@ def export_simulation_csv(
 
     # Determine number of years from first percentile array
     first_key = next(iter(percentiles))
-    values = percentiles[first_key]
-    if isinstance(values, np.ndarray):
-        n_points = len(values)
-    else:
-        n_points = len(values)
+    n_points = len(percentiles[first_key])
 
     fieldnames = ["year"] + [f"p{p}" for p in sorted(percentiles.keys())]
     writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -128,9 +128,7 @@ def export_simulation_csv(
     for yr in range(n_points):
         row: dict[str, Any] = {"year": yr}
         for p_level in sorted(percentiles.keys()):
-            vals = percentiles[p_level]
-            val = vals[yr] if isinstance(vals, np.ndarray) else vals[yr]
-            row[f"p{p_level}"] = f"{float(val):.2f}"
+            row[f"p{p_level}"] = f"{float(percentiles[p_level][yr]):.2f}"
         writer.writerow(row)
 
     content = output.getvalue()

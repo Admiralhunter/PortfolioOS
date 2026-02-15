@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from portfolioos.portfolio.reconciliation import (
     detect_discrepancies,
     reconcile_holdings,
@@ -241,20 +240,40 @@ class TestDetectDiscrepancies:
 
     def test_no_discrepancies(self):
         computed = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         stored = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         result = detect_discrepancies(computed, stored)
         assert len(result) == 0
 
     def test_shares_mismatch(self):
         computed = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         stored = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 90, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 90,
+                "cost_basis": 15000.0,
+            }
         ]
         result = detect_discrepancies(computed, stored)
         assert len(result) == 1
@@ -264,10 +283,20 @@ class TestDetectDiscrepancies:
 
     def test_cost_basis_mismatch(self):
         computed = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         stored = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 14000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 14000.0,
+            }
         ]
         result = detect_discrepancies(computed, stored)
         assert len(result) == 1
@@ -275,7 +304,12 @@ class TestDetectDiscrepancies:
 
     def test_missing_in_stored(self):
         computed = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         stored: list[dict] = []
         result = detect_discrepancies(computed, stored)
@@ -286,7 +320,12 @@ class TestDetectDiscrepancies:
     def test_extra_in_stored(self):
         computed: list[dict] = []
         stored = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         result = detect_discrepancies(computed, stored)
         assert len(result) == 1
@@ -295,12 +334,32 @@ class TestDetectDiscrepancies:
 
     def test_multiple_discrepancies(self):
         computed = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0},
-            {"account_id": "acc1", "symbol": "GOOGL", "shares": 50, "cost_basis": 7000.0},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            },
+            {
+                "account_id": "acc1",
+                "symbol": "GOOGL",
+                "shares": 50,
+                "cost_basis": 7000.0,
+            },
         ]
         stored = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 90, "cost_basis": 14000.0},
-            {"account_id": "acc1", "symbol": "GOOGL", "shares": 50, "cost_basis": 7000.0},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 90,
+                "cost_basis": 14000.0,
+            },
+            {
+                "account_id": "acc1",
+                "symbol": "GOOGL",
+                "shares": 50,
+                "cost_basis": 7000.0,
+            },
         ]
         result = detect_discrepancies(computed, stored)
         # AAPL has both shares and cost_basis mismatch

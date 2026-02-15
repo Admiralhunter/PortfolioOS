@@ -13,6 +13,11 @@ from typing import Any
 
 from portfolioos.portfolio.cost_basis import CostBasisTracker
 
+# Floating-point tolerances for comparisons
+_SHARE_EPSILON = 1e-9
+_SHARE_TOLERANCE = 1e-6
+_COST_TOLERANCE = 0.01
+
 
 def reconcile_holdings(
     transactions: list[dict[str, Any]],
@@ -33,47 +38,61 @@ def reconcile_holdings(
         shares, cost_basis, realized_gain.
 
     """
-    # Sort transactions chronologically
     sorted_txns = sorted(transactions, key=lambda t: t["date"])
 
-    # Group by (account_id, symbol)
     trackers: dict[tuple[str, str], CostBasisTracker] = defaultdict(CostBasisTracker)
     realized_gains: dict[tuple[str, str], float] = defaultdict(float)
 
     for txn in sorted_txns:
-        account_id = txn["account_id"]
-        symbol = txn["symbol"]
-        key = (account_id, symbol)
-        tracker = trackers[key]
+        key = (txn["account_id"], txn["symbol"])
+        _apply_transaction(trackers[key], txn, realized_gains, key)
 
-        tx_type = txn["type"]
-        quantity = float(txn.get("quantity", 0))
-        price = float(txn.get("price", 0))
-        fees = float(txn.get("fees", 0))
-        date = txn["date"]
+    return _build_holdings(trackers, realized_gains)
 
-        if tx_type == "buy":
-            tracker.add_buy(date, quantity, price, fees)
-        elif tx_type == "sell":
-            disposed = tracker.sell(date, quantity, price, fees, method="fifo")
-            for d in disposed:
-                realized_gains[key] += d.gain_loss
-        elif tx_type == "split":
-            _apply_split(tracker, quantity)
-        elif tx_type == "dividend":
-            # Reinvested dividends are treated as buys at the given price
-            if price > 0 and quantity > 0:
-                tracker.add_buy(date, quantity, price, fees)
-        elif tx_type == "transfer":
-            # Transfers in are treated as buys with the given cost basis
-            if quantity > 0:
-                tracker.add_buy(date, quantity, price, fees)
 
-    # Build holdings from trackers
+def _apply_transaction(
+    tracker: CostBasisTracker,
+    txn: dict[str, Any],
+    realized_gains: dict[tuple[str, str], float],
+    key: tuple[str, str],
+) -> None:
+    """Apply a single transaction to a tracker."""
+    tx_type = txn["type"]
+    quantity = float(txn.get("quantity", 0))
+    price = float(txn.get("price", 0))
+    fees = float(txn.get("fees", 0))
+    date = txn["date"]
+
+    if tx_type == "buy":
+        tracker.add_buy(date, quantity, price, fees)
+    elif tx_type == "sell":
+        disposed = tracker.sell(date, quantity, price, fees, method="fifo")
+        for d in disposed:
+            realized_gains[key] += d.gain_loss
+    elif tx_type == "split":
+        _apply_split(tracker, quantity)
+    elif _is_inflow(tx_type, quantity, price):
+        tracker.add_buy(date, quantity, price, fees)
+
+
+def _is_inflow(tx_type: str, quantity: float, price: float) -> bool:
+    """Check if a transaction is a portfolio inflow (dividend or transfer)."""
+    if tx_type == "dividend":
+        return price > 0 and quantity > 0
+    if tx_type == "transfer":
+        return quantity > 0
+    return False
+
+
+def _build_holdings(
+    trackers: dict[tuple[str, str], CostBasisTracker],
+    realized_gains: dict[tuple[str, str], float],
+) -> list[dict[str, Any]]:
+    """Build holdings list from trackers."""
     holdings: list[dict[str, Any]] = []
     for (account_id, symbol), tracker in trackers.items():
         total_shares = tracker.get_total_shares()
-        if total_shares <= 1e-9:
+        if total_shares <= _SHARE_EPSILON:
             continue
         holdings.append(
             {
@@ -84,7 +103,6 @@ def reconcile_holdings(
                 "realized_gain": realized_gains[(account_id, symbol)],
             }
         )
-
     return sorted(holdings, key=lambda h: (h["account_id"], h["symbol"]))
 
 
@@ -118,59 +136,50 @@ def detect_discrepancies(
         c = computed_map.get(key)
         s = stored_map.get(key)
 
-        if c is None:
+        if c is None or s is None:
             discrepancies.append(
                 {
                     "account_id": account_id,
                     "symbol": symbol,
                     "field": "existence",
-                    "computed_value": "missing",
-                    "stored_value": "present",
+                    "computed_value": "missing" if c is None else "present",
+                    "stored_value": "missing" if s is None else "present",
                 }
             )
             continue
 
-        if s is None:
-            discrepancies.append(
-                {
-                    "account_id": account_id,
-                    "symbol": symbol,
-                    "field": "existence",
-                    "computed_value": "present",
-                    "stored_value": "missing",
-                }
-            )
-            continue
-
-        # Compare shares
-        c_shares = float(c.get("shares", 0))
-        s_shares = float(s.get("shares", 0))
-        if abs(c_shares - s_shares) > 1e-6:
-            discrepancies.append(
-                {
-                    "account_id": account_id,
-                    "symbol": symbol,
-                    "field": "shares",
-                    "computed_value": c_shares,
-                    "stored_value": s_shares,
-                }
-            )
-
-        # Compare cost basis
-        c_basis = float(c.get("cost_basis", 0))
-        s_basis = float(s.get("cost_basis", 0))
-        if abs(c_basis - s_basis) > 0.01:
-            discrepancies.append(
-                {
-                    "account_id": account_id,
-                    "symbol": symbol,
-                    "field": "cost_basis",
-                    "computed_value": c_basis,
-                    "stored_value": s_basis,
-                }
-            )
+        _compare_field(
+            discrepancies, account_id, symbol, c, s, "shares", _SHARE_TOLERANCE
+        )
+        _compare_field(
+            discrepancies, account_id, symbol, c, s, "cost_basis", _COST_TOLERANCE
+        )
 
     return discrepancies
+
+
+def _compare_field(
+    discrepancies: list[dict[str, Any]],
+    account_id: str,
+    symbol: str,
+    computed: dict[str, Any],
+    stored: dict[str, Any],
+    field_name: str,
+    tolerance: float,
+) -> None:
+    """Compare a single field between computed and stored holdings."""
+    c_val = float(computed.get(field_name, 0))
+    s_val = float(stored.get(field_name, 0))
+    if abs(c_val - s_val) > tolerance:
+        discrepancies.append(
+            {
+                "account_id": account_id,
+                "symbol": symbol,
+                "field": field_name,
+                "computed_value": c_val,
+                "stored_value": s_val,
+            }
+        )
 
 
 def _apply_split(tracker: CostBasisTracker, ratio: float) -> None:

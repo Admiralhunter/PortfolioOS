@@ -11,6 +11,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+# Minimum snapshots for growth rate calculation
+_MIN_SNAPSHOTS = 2
+# Number of snapshots for velocity calculation (2x monthly window)
+_VELOCITY_WINDOW = 42
+_MONTHLY_WINDOW = 22
+
 
 @dataclass
 class NetWorthSnapshot:
@@ -66,9 +72,7 @@ def compute_net_worth(
         snapshot.total_cost_basis += cost_basis
 
         by_account[account_id] = by_account.get(account_id, 0.0) + market_value
-        by_asset_type[asset_type] = (
-            by_asset_type.get(asset_type, 0.0) + market_value
-        )
+        by_asset_type[asset_type] = by_asset_type.get(asset_type, 0.0) + market_value
 
     snapshot.total_unrealized_gain = snapshot.total_value - snapshot.total_cost_basis
     snapshot.by_account = by_account
@@ -141,7 +145,7 @@ def compute_growth_rates(
         Dict with period-based returns and velocity metrics.
 
     """
-    if len(snapshots) < 2:
+    if len(snapshots) < _MIN_SNAPSHOTS:
         return {
             "periods": {},
             "velocity": 0.0,
@@ -152,7 +156,7 @@ def compute_growth_rates(
 
     # Compute returns for each period lookback
     period_defs = {
-        "1m": 21,    # ~21 trading days
+        "1m": 21,  # ~21 trading days
         "3m": 63,
         "6m": 126,
         "1y": 252,
@@ -174,10 +178,10 @@ def compute_growth_rates(
 
     # Velocity: recent rate of change vs earlier rate
     velocity = 0.0
-    if len(snapshots) >= 42:
-        recent_start = float(snapshots[-22]["total_value"])
-        prior_start = float(snapshots[-42]["total_value"])
-        prior_end = float(snapshots[-22]["total_value"])
+    if len(snapshots) >= _VELOCITY_WINDOW:
+        recent_start = float(snapshots[-_MONTHLY_WINDOW]["total_value"])
+        prior_start = float(snapshots[-_VELOCITY_WINDOW]["total_value"])
+        prior_end = float(snapshots[-_MONTHLY_WINDOW]["total_value"])
 
         if recent_start > 0 and prior_start > 0:
             recent_rate = (latest - recent_start) / recent_start

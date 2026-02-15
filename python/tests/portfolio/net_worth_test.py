@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from portfolioos.portfolio.net_worth import (
     compute_asset_allocation,
     compute_growth_rates,
@@ -16,8 +15,18 @@ class TestComputeNetWorth:
 
     def test_basic_computation(self):
         holdings = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0},
-            {"account_id": "acc1", "symbol": "GOOGL", "shares": 50, "cost_basis": 7000.0},
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            },
+            {
+                "account_id": "acc1",
+                "symbol": "GOOGL",
+                "shares": 50,
+                "cost_basis": 7000.0,
+            },
         ]
         prices = {"AAPL": 180.0, "GOOGL": 160.0}
         result = compute_net_worth(holdings, prices)
@@ -28,8 +37,18 @@ class TestComputeNetWorth:
 
     def test_by_account_breakdown(self):
         holdings = [
-            {"account_id": "ira", "symbol": "VTI", "shares": 100, "cost_basis": 10000.0},
-            {"account_id": "taxable", "symbol": "VTI", "shares": 50, "cost_basis": 5000.0},
+            {
+                "account_id": "ira",
+                "symbol": "VTI",
+                "shares": 100,
+                "cost_basis": 10000.0,
+            },
+            {
+                "account_id": "taxable",
+                "symbol": "VTI",
+                "shares": 50,
+                "cost_basis": 5000.0,
+            },
         ]
         prices = {"VTI": 220.0}
         result = compute_net_worth(holdings, prices)
@@ -66,7 +85,12 @@ class TestComputeNetWorth:
 
     def test_missing_price(self):
         holdings = [
-            {"account_id": "acc1", "symbol": "AAPL", "shares": 100, "cost_basis": 15000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "AAPL",
+                "shares": 100,
+                "cost_basis": 15000.0,
+            }
         ]
         # Price for AAPL not in dict
         result = compute_net_worth(holdings, {})
@@ -75,7 +99,12 @@ class TestComputeNetWorth:
 
     def test_single_holding(self):
         holdings = [
-            {"account_id": "acc1", "symbol": "VTI", "shares": 200, "cost_basis": 30000.0}
+            {
+                "account_id": "acc1",
+                "symbol": "VTI",
+                "shares": 200,
+                "cost_basis": 30000.0,
+            }
         ]
         prices = {"VTI": 200.0}
         result = compute_net_worth(holdings, prices)
@@ -147,8 +176,7 @@ class TestComputeGrowthRates:
 
     def test_no_period_when_insufficient_history(self):
         snapshots = [
-            {"date": f"2024-01-{i:02d}", "total_value": 100000}
-            for i in range(1, 10)
+            {"date": f"2024-01-{i:02d}", "total_value": 100000} for i in range(1, 10)
         ]
         result = compute_growth_rates(snapshots)
         # Only 9 snapshots, need > 21 for 1m
@@ -157,8 +185,7 @@ class TestComputeGrowthRates:
     def test_velocity_calculation(self):
         # Need 42+ snapshots for velocity
         snapshots = [
-            {"date": f"day-{i}", "total_value": 100000 + i * 200}
-            for i in range(50)
+            {"date": f"day-{i}", "total_value": 100000 + i * 200} for i in range(50)
         ]
         result = compute_growth_rates(snapshots)
         # Linear growth → velocity should be near 0
