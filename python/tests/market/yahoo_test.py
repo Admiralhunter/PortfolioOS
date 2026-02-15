@@ -15,6 +15,21 @@ from portfolioos.market.yahoo import (
 )
 
 
+def _make_mock_yf(ticker_mock: MagicMock) -> MagicMock:
+    """Create a mock yfinance module that returns the given ticker."""
+    yf_mock = MagicMock()
+    yf_mock.Ticker.return_value = ticker_mock
+    return yf_mock
+
+
+def _patch_require(yf_mock: MagicMock):
+    """Patch _require_yfinance to return mocked yfinance + real pandas."""
+    return patch(
+        "portfolioos.market.yahoo._require_yfinance",
+        return_value=(yf_mock, pd),
+    )
+
+
 class TestValidateDates:
     """Tests for date validation helper."""
 
@@ -47,11 +62,8 @@ class TestFetchPriceHistory:
         with pytest.raises(ValueError, match="non-empty"):
             fetch_price_history("   ", "2024-01-01", "2024-01-31")
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_returns_list_of_dicts(self, mock_ticker_cls):
+    def test_returns_list_of_dicts(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
-
         idx = pd.DatetimeIndex(["2024-01-02", "2024-01-03"])
         df = pd.DataFrame(
             {
@@ -65,18 +77,17 @@ class TestFetchPriceHistory:
             index=idx,
         )
         mock_ticker.history.return_value = df
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_price_history("AAPL", "2024-01-01", "2024-01-05")
+        with _patch_require(yf_mock):
+            result = fetch_price_history("AAPL", "2024-01-01", "2024-01-05")
 
         assert isinstance(result, list)
         assert len(result) == 2
         assert all(isinstance(r, dict) for r in result)
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_contains_required_fields(self, mock_ticker_cls):
+    def test_contains_required_fields(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
-
         idx = pd.DatetimeIndex(["2024-01-02"])
         df = pd.DataFrame(
             {
@@ -90,19 +101,23 @@ class TestFetchPriceHistory:
             index=idx,
         )
         mock_ticker.history.return_value = df
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_price_history("VTI", "2024-01-01", "2024-01-05")
+        with _patch_require(yf_mock):
+            result = fetch_price_history("VTI", "2024-01-01", "2024-01-05")
+
         required = {"date", "open", "high", "low", "close", "adj_close", "volume"}
         for row in result:
             assert required.issubset(row.keys())
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_empty_result(self, mock_ticker_cls):
+    def test_empty_result(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
         mock_ticker.history.return_value = pd.DataFrame()
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_price_history("INVALID", "2024-01-01", "2024-01-31")
+        with _patch_require(yf_mock):
+            result = fetch_price_history("INVALID", "2024-01-01", "2024-01-31")
+
         assert result == []
 
 
@@ -113,26 +128,27 @@ class TestFetchDividends:
         with pytest.raises(ValueError, match="non-empty"):
             fetch_dividends("", "2024-01-01", "2024-12-31")
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_returns_dividend_records(self, mock_ticker_cls):
+    def test_returns_dividend_records(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
-
         idx = pd.DatetimeIndex(["2024-03-15", "2024-06-15"])
         mock_ticker.dividends = pd.Series([0.25, 0.26], index=idx)
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_dividends("AAPL", "2024-01-01", "2024-12-31")
+        with _patch_require(yf_mock):
+            result = fetch_dividends("AAPL", "2024-01-01", "2024-12-31")
+
         assert len(result) == 2
         assert "date" in result[0]
         assert "dividend" in result[0]
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_empty_dividends(self, mock_ticker_cls):
+    def test_empty_dividends(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
         mock_ticker.dividends = pd.Series(dtype=float)
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_dividends("BRK-A", "2024-01-01", "2024-12-31")
+        with _patch_require(yf_mock):
+            result = fetch_dividends("BRK-A", "2024-01-01", "2024-12-31")
+
         assert result == []
 
 
@@ -143,15 +159,15 @@ class TestFetchSplits:
         with pytest.raises(ValueError, match="non-empty"):
             fetch_splits("", "2020-01-01", "2024-12-31")
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_returns_split_records(self, mock_ticker_cls):
+    def test_returns_split_records(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
-
         idx = pd.DatetimeIndex(["2020-08-31"])
         mock_ticker.splits = pd.Series([4.0], index=idx)
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_splits("AAPL", "2020-01-01", "2024-12-31")
+        with _patch_require(yf_mock):
+            result = fetch_splits("AAPL", "2020-01-01", "2024-12-31")
+
         assert len(result) == 1
         assert result[0]["ratio"] == 4.0
 
@@ -163,10 +179,8 @@ class TestFetchInfo:
         with pytest.raises(ValueError, match="non-empty"):
             fetch_info("")
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_returns_info_dict(self, mock_ticker_cls):
+    def test_returns_info_dict(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
         mock_ticker.info = {
             "marketCap": 3000000000000,
             "trailingPE": 28.5,
@@ -174,20 +188,24 @@ class TestFetchInfo:
             "sector": "Technology",
             "currency": "USD",
         }
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_info("AAPL")
+        with _patch_require(yf_mock):
+            result = fetch_info("AAPL")
+
         assert result["symbol"] == "AAPL"
         assert result["market_cap"] == 3000000000000
         assert result["pe_ratio"] == 28.5
         assert result["name"] == "Apple Inc."
 
-    @patch("portfolioos.market.yahoo.yf.Ticker")
-    def test_missing_fields_omitted(self, mock_ticker_cls):
+    def test_missing_fields_omitted(self):
         mock_ticker = MagicMock()
-        mock_ticker_cls.return_value = mock_ticker
         mock_ticker.info = {"shortName": "Test ETF"}
+        yf_mock = _make_mock_yf(mock_ticker)
 
-        result = fetch_info("VTI")
+        with _patch_require(yf_mock):
+            result = fetch_info("VTI")
+
         assert "symbol" in result
         assert "name" in result
         assert "market_cap" not in result

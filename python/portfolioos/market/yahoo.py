@@ -7,6 +7,10 @@ Note:
     yfinance uses an unofficial Yahoo Finance API. Rate limiting
     and respectful request patterns are required.
 
+    yfinance is an optional dependency (install with ``pip install
+    portfolioos[market]``). Functions raise ``ImportError`` at call
+    time if the library is not installed.
+
 """
 
 from __future__ import annotations
@@ -15,13 +19,32 @@ import logging
 from datetime import datetime
 from typing import Any
 
-import pandas as pd
-import yfinance as yf
-
 logger = logging.getLogger(__name__)
 
 # Minimum date range that yfinance can handle reliably
 _MIN_HISTORY_DAYS = 1
+
+
+def _require_yfinance() -> tuple[Any, Any]:
+    """Lazy-import yfinance and pandas.
+
+    Returns:
+        Tuple of (yfinance module, pandas module).
+
+    Raises:
+        ImportError: If yfinance is not installed.
+
+    """
+    try:
+        import pandas as pd
+        import yfinance as yf
+    except ImportError as exc:
+        msg = (
+            "yfinance is required for Yahoo Finance data. "
+            "Install with: pip install portfolioos[market]"
+        )
+        raise ImportError(msg) from exc
+    return yf, pd
 
 
 def _validate_dates(start_date: str, end_date: str) -> tuple[str, str]:
@@ -70,16 +93,18 @@ def fetch_price_history(
 
     Raises:
         ValueError: If dates are invalid or symbol is empty.
+        ImportError: If yfinance is not installed.
 
     """
     if not symbol or not symbol.strip():
         msg = "symbol must be a non-empty string"
         raise ValueError(msg)
 
+    yf, pd = _require_yfinance()
     start_date, end_date = _validate_dates(start_date, end_date)
 
     ticker = yf.Ticker(symbol.strip().upper())
-    df: pd.DataFrame = ticker.history(start=start_date, end=end_date, auto_adjust=False)
+    df = ticker.history(start=start_date, end=end_date, auto_adjust=False)
 
     if df.empty:
         logger.warning(
@@ -92,7 +117,7 @@ def fetch_price_history(
 
     records: list[dict[str, Any]] = []
     for date_idx, row in df.iterrows():
-        date_str = pd.Timestamp(date_idx).strftime("%Y-%m-%d")  # type: ignore[arg-type]
+        date_str = pd.Timestamp(date_idx).strftime("%Y-%m-%d")
         records.append(
             {
                 "date": date_str,
@@ -126,12 +151,14 @@ def fetch_dividends(
 
     Raises:
         ValueError: If dates are invalid or symbol is empty.
+        ImportError: If yfinance is not installed.
 
     """
     if not symbol or not symbol.strip():
         msg = "symbol must be a non-empty string"
         raise ValueError(msg)
 
+    yf, pd = _require_yfinance()
     start_date, end_date = _validate_dates(start_date, end_date)
 
     ticker = yf.Ticker(symbol.strip().upper())
@@ -171,12 +198,14 @@ def fetch_splits(
 
     Raises:
         ValueError: If dates are invalid or symbol is empty.
+        ImportError: If yfinance is not installed.
 
     """
     if not symbol or not symbol.strip():
         msg = "symbol must be a non-empty string"
         raise ValueError(msg)
 
+    yf, pd = _require_yfinance()
     start_date, end_date = _validate_dates(start_date, end_date)
 
     ticker = yf.Ticker(symbol.strip().upper())
@@ -210,11 +239,14 @@ def fetch_info(symbol: str) -> dict[str, Any]:
 
     Raises:
         ValueError: If symbol is empty.
+        ImportError: If yfinance is not installed.
 
     """
     if not symbol or not symbol.strip():
         msg = "symbol must be a non-empty string"
         raise ValueError(msg)
+
+    yf, _pd = _require_yfinance()
 
     ticker = yf.Ticker(symbol.strip().upper())
     raw_info = ticker.info

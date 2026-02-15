@@ -7,6 +7,10 @@ Note:
     Requires a free API key from https://fred.stlouisfed.org/docs/api/api_key.html
     Rate limit: 120 requests per minute.
 
+    fredapi is an optional dependency (install with ``pip install
+    portfolioos[market]``). Functions raise ``ImportError`` at call
+    time if the library is not installed.
+
 """
 
 from __future__ import annotations
@@ -14,9 +18,6 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any
-
-import pandas as pd
-from fredapi import Fred
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,29 @@ DEFAULT_SERIES: list[str] = [
 ]
 
 
-def _get_fred_client(api_key: str | None = None) -> Fred:
+def _require_fredapi() -> tuple[Any, Any]:
+    """Lazy-import fredapi and pandas.
+
+    Returns:
+        Tuple of (Fred class, pandas module).
+
+    Raises:
+        ImportError: If fredapi is not installed.
+
+    """
+    try:
+        import pandas as pd
+        from fredapi import Fred
+    except ImportError as exc:
+        msg = (
+            "fredapi is required for FRED data. "
+            "Install with: pip install portfolioos[market]"
+        )
+        raise ImportError(msg) from exc
+    return Fred, pd
+
+
+def _get_fred_client(api_key: str | None = None) -> Any:
     """Create a FRED API client.
 
     Args:
@@ -53,8 +76,10 @@ def _get_fred_client(api_key: str | None = None) -> Fred:
 
     Raises:
         ValueError: If no API key is provided or found in environment.
+        ImportError: If fredapi is not installed.
 
     """
+    fred_cls, _pd = _require_fredapi()
     key = api_key or os.environ.get("FRED_API_KEY")
     if not key:
         msg = (
@@ -62,7 +87,7 @@ def _get_fred_client(api_key: str | None = None) -> Fred:
             "or pass api_key parameter."
         )
         raise ValueError(msg)
-    return Fred(api_key=key)
+    return fred_cls(api_key=key)
 
 
 def fetch_series(
@@ -85,14 +110,16 @@ def fetch_series(
 
     Raises:
         ValueError: If series_id is empty or API key is missing.
+        ImportError: If fredapi is not installed.
 
     """
     if not series_id or not series_id.strip():
         msg = "series_id must be a non-empty string"
         raise ValueError(msg)
 
+    _fred_cls, pd = _require_fredapi()
     client = _get_fred_client(api_key)
-    data: pd.Series[float] = client.get_series(
+    data = client.get_series(
         series_id.strip().upper(),
         observation_start=start_date,
         observation_end=end_date,
@@ -112,7 +139,7 @@ def fetch_series(
 
     return [
         {
-            "date": pd.Timestamp(date_idx).strftime("%Y-%m-%d"),  # type: ignore[arg-type]
+            "date": pd.Timestamp(date_idx).strftime("%Y-%m-%d"),
             "value": round(float(value), 6),
             "series_id": series_id.strip().upper(),
         }
@@ -164,6 +191,7 @@ def fetch_series_info(
 
     Raises:
         ValueError: If series_id is empty or API key is missing.
+        ImportError: If fredapi is not installed.
 
     """
     if not series_id or not series_id.strip():
