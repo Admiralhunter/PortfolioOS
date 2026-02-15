@@ -15,6 +15,7 @@ dependencies = [
     "numpy>=2.1,<3",
     "pandas>=2.2,<4",
     "scipy>=1.14,<2",
+    "duckdb>=1.0,<2",
 ]
 
 [project.optional-dependencies]
@@ -179,5 +180,5 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["yfinance.*", "fredapi.*", "scipy.*"]
+module = ["yfinance.*", "fredapi.*", "scipy.*", "duckdb.*"]
 ignore_missing_imports = true
