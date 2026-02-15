@@ -16,12 +16,36 @@ import sys
 import traceback
 from typing import Any
 
+import numpy as np
+
+from portfolioos.analysis.returns import cagr, max_drawdown
+from portfolioos.analysis.statistics import bootstrap_returns, percentile_rank
+from portfolioos.simulation.monte_carlo import run_simulation
+from portfolioos.simulation.withdrawal import (
+    constant_dollar_withdrawal,
+    guyton_klinger_withdrawal,
+)
+
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that handles NumPy types."""
+
+    def default(self, o: Any) -> Any:
+        """Convert NumPy types to JSON-serializable Python types."""
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        return super().default(o)
+
 
 def dispatch(method: str, params: dict[str, Any]) -> Any:
     """Route a method call to the appropriate handler.
 
     Args:
-        method: The method name (e.g., "simulation.monte_carlo").
+        method: The method name (e.g., "simulation.run").
         params: The parameters for the method.
 
     Returns:
@@ -31,8 +55,15 @@ def dispatch(method: str, params: dict[str, Any]) -> Any:
         ValueError: If the method is not recognized.
 
     """
-    # Wire up handlers as simulation/market/analysis modules are implemented.
-    handlers: dict[str, Any] = {}
+    handlers: dict[str, Any] = {
+        "simulation.run": run_simulation,
+        "analysis.cagr": cagr,
+        "analysis.max_drawdown": max_drawdown,
+        "analysis.percentile_rank": percentile_rank,
+        "analysis.bootstrap_returns": bootstrap_returns,
+        "withdrawal.constant_dollar": constant_dollar_withdrawal,
+        "withdrawal.guyton_klinger": guyton_klinger_withdrawal,
+    }
     if method not in handlers:
         msg = f"Unknown method: {method}"
         raise ValueError(msg)
@@ -70,7 +101,7 @@ def main() -> None:
                     "traceback": traceback.format_exc(),
                 },
             }
-        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.write(json.dumps(response, cls=_NumpyEncoder) + "\n")
         sys.stdout.flush()
 
 
