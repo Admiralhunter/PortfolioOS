@@ -12,7 +12,7 @@ FROM python:3.13-slim AS python-deps
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 WORKDIR /app/python
-COPY python/pyproject.toml python/uv.lock python/.python-version ./
+COPY python/pyproject.toml python/uv.lock python/.python-version python/README.md ./
 RUN uv sync --frozen --no-dev
 
 WORKDIR /app/agents
