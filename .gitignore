@@ -58,3 +58,6 @@ yarn-error.log*
 
 # ── Electron-specific ──
 *.asar
+
+# ── Python venvs ──
+python/.venv/
