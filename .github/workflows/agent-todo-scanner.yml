@@ -1,0 +1,70 @@
+name: TODO Scanner (ad-hoc)
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_llm:
+        description: 'Skip LLM triage (regex-only scan)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  todo-scanner:
+    name: TODO Scanner (regex)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Run TODO Scanner (regex — blackboard only)
+        run: uv run --project agents python -m agents.agents.todo_scanner --repo-root .
+
+      - name: Upload blackboard
+        uses: actions/upload-artifact@v6
+        with:
+          name: blackboard-todo-scanner
+          path: agents/blackboard/blackboard.db
+          retention-days: 7
+
+  todo-scanner-llm:
+    name: TODO Scanner (LLM triage)
+    runs-on: ubuntu-latest
+    needs: todo-scanner
+    if: ${{ !inputs.skip_llm }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Download blackboard
+        uses: actions/download-artifact@v7
+        with:
+          name: blackboard-todo-scanner
+          path: agents/blackboard/
+
+      - name: Run LLM-powered TODO Scanner
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run --project agents python -m agents.agents.todo_scanner_llm --repo-root .
+
+      - name: Upload blackboard
+        uses: actions/upload-artifact@v6
+        with:
+          name: blackboard-todo-scanner-llm
+          path: agents/blackboard/blackboard.db
+          retention-days: 7
