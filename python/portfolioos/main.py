@@ -20,6 +20,16 @@ import numpy as np
 
 from portfolioos.analysis.returns import cagr, max_drawdown
 from portfolioos.analysis.statistics import bootstrap_returns, percentile_rank
+from portfolioos.ingest.csv_import import parse_csv
+from portfolioos.market.fred import fetch_multiple_series as fred_fetch_multiple
+from portfolioos.market.fred import fetch_series as fred_fetch_series
+from portfolioos.market.validation import detect_gaps, detect_outliers, validate_ohlcv
+from portfolioos.market.yahoo import (
+    fetch_dividends,
+    fetch_info,
+    fetch_price_history,
+    fetch_splits,
+)
 from portfolioos.simulation.monte_carlo import run_simulation
 from portfolioos.simulation.withdrawal import (
     constant_dollar_withdrawal,
@@ -56,13 +66,30 @@ def dispatch(method: str, params: dict[str, Any]) -> Any:
 
     """
     handlers: dict[str, Any] = {
+        # Simulation
         "simulation.run": run_simulation,
+        # Analysis
         "analysis.cagr": cagr,
         "analysis.max_drawdown": max_drawdown,
         "analysis.percentile_rank": percentile_rank,
         "analysis.bootstrap_returns": bootstrap_returns,
+        # Withdrawal strategies
         "withdrawal.constant_dollar": constant_dollar_withdrawal,
         "withdrawal.guyton_klinger": guyton_klinger_withdrawal,
+        # Market data — Yahoo Finance
+        "market.yahoo.price_history": fetch_price_history,
+        "market.yahoo.dividends": fetch_dividends,
+        "market.yahoo.splits": fetch_splits,
+        "market.yahoo.info": fetch_info,
+        # Market data — FRED
+        "market.fred.series": fred_fetch_series,
+        "market.fred.multiple_series": fred_fetch_multiple,
+        # Validation
+        "validation.detect_gaps": detect_gaps,
+        "validation.detect_outliers": detect_outliers,
+        "validation.ohlcv": validate_ohlcv,
+        # Import
+        "ingest.csv": parse_csv,
     }
     if method not in handlers:
         msg = f"Unknown method: {method}"
