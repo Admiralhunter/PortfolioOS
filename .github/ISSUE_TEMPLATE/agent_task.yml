@@ -1,0 +1,169 @@
+name: Agent Task
+description: Structured task for the PM or Worker agent to execute autonomously.
+title: "agent: "
+labels: ["status:needs-triage", "agent:worker"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Agent Task
+
+        Use this template to create a well-specified task that the Worker agent
+        can pick up and implement autonomously. This template enforces the
+        structure the agent pipeline expects.
+
+        **The PM agent will validate this issue** before the Worker agent begins.
+        If the spec is incomplete or ambiguous, the PM will add
+        `status:blocked` and request clarification.
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: >
+        One sentence describing what this task accomplishes. Use imperative mood.
+      placeholder: "Add CSV import support for Vanguard brokerage statement format."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Change Type
+      description: Maps directly to the PR tag system. See AGENT_PR_GUIDE.md.
+      options:
+        - "feat — New feature or capability"
+        - "fix — Bug fix"
+        - "refactor — Code restructuring, no behavior change"
+        - "test — Add or improve tests"
+        - "chore — Build, config, dependencies, tooling"
+        - "docs — Documentation only"
+        - "perf — Performance optimization"
+        - "security — Security fix or hardening"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scopes
+      description: >
+        Which scopes will the PR touch? Maps to PR scope tags.
+      options:
+        - label: "scope:frontend"
+        - label: "scope:backend"
+        - label: "scope:database"
+        - label: "scope:python"
+        - label: "scope:llm"
+        - label: "scope:config"
+        - label: "scope:ci"
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk Level
+      description: Maps directly to the PR risk tag.
+      options:
+        - "low — Isolated, easily reversible"
+        - "medium — Touches shared interfaces"
+        - "high — Breaking changes, schema migration, security, or financial calculations"
+    validations:
+      required: true
+
+  - type: textarea
+    id: spec
+    attributes:
+      label: Implementation Spec
+      description: >
+        Detailed specification the Worker agent will follow. Be explicit about:
+        files to create/modify, interfaces to implement, patterns to follow,
+        and edge cases to handle. The more specific, the better the output.
+      placeholder: |
+        ### Files to create
+        - `electron/services/importers/vanguard-csv.ts` — Parser for Vanguard CSV format
+
+        ### Files to modify
+        - `electron/ipc/import.ts` — Add `import:vanguard-csv` IPC channel
+        - `src/components/portfolio/ImportDialog.tsx` — Add Vanguard option to format dropdown
+
+        ### Interface
+        ```typescript
+        interface VanguardTransaction {
+          date: string;          // MM/DD/YYYY format
+          action: string;        // Buy, Sell, Dividend, etc.
+          symbol: string;
+          quantity: number;
+          price: number;
+          amount: number;
+        }
+        ```
+
+        ### Behavior
+        - Parse CSV with headers on row 1
+        - Skip summary rows (rows without a valid date)
+        - Map Vanguard action types to PortfolioOS transaction types
+        - Return validation errors for malformed rows (don't skip silently)
+
+        ### Edge cases
+        - Handle stock splits recorded as "Share Exchange"
+        - Handle money market transactions (no symbol)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: >
+        Checkboxes the Worker agent must satisfy before opening a PR.
+        Each criterion should be independently testable.
+      placeholder: |
+        - [ ] Vanguard CSV files parse correctly (test with fixture in `tests/fixtures/`)
+        - [ ] Malformed rows produce clear validation errors
+        - [ ] IPC channel registered and accessible from renderer
+        - [ ] Import dialog shows Vanguard as a format option
+        - [ ] Unit tests cover happy path, empty file, and malformed input
+        - [ ] No file exceeds 700 lines, no function exceeds 100 lines
+        - [ ] `make check-all` passes
+    validations:
+      required: true
+
+  - type: textarea
+    id: test-fixtures
+    attributes:
+      label: Test Data / Fixtures
+      description: >
+        Optional. Sample input data, expected output, or test fixture
+        descriptions the agent should create.
+      placeholder: |
+        Create `tests/fixtures/vanguard-sample.csv` with:
+        ```csv
+        Trade Date,Action,Symbol,Description,Quantity,Price,Amount
+        01/15/2026,Buy,VTI,VANGUARD TOTAL STOCK MKT ETF,10,250.00,2500.00
+        01/20/2026,Dividend,VTI,VANGUARD TOTAL STOCK MKT ETF,,,12.50
+        ```
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: >
+        Optional. Related issues, prior art, documentation links, or
+        methodology citations.
+      placeholder: |
+        - Closes #78
+        - Related to #45 (general import framework)
+        - Vanguard CSV format docs: [internal reference]
+
+  - type: textarea
+    id: agent-notes
+    attributes:
+      label: Notes for Agent
+      description: >
+        Optional. Special instructions, constraints, or warnings for the
+        implementing agent.
+      placeholder: |
+        - Follow the existing CSV parser pattern in `electron/services/importers/schwab-csv.ts`
+        - Do NOT use `eval()` or `new Function()` for CSV parsing
+        - Use the `csv-parse` package (already a dependency) — do not add new deps
+        - Financial amounts must use exact arithmetic (no floating-point rounding)

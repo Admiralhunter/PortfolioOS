@@ -1,0 +1,128 @@
+name: Architecture Decision
+description: Propose or discuss a significant architectural change that affects multiple modules.
+title: "arch: "
+labels: ["status:needs-triage", "risk:high"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Architecture Decision
+
+        Use this template for changes that affect the system's structure, data
+        flow, or core abstractions. These issues require human review before
+        implementation — the Worker agent should not implement them without
+        explicit approval.
+
+        **Before filing:** Review [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+        and the relevant sections of [CLAUDE.md](../CLAUDE.md).
+
+  - type: textarea
+    id: title
+    attributes:
+      label: Decision Title
+      description: Short, descriptive title for this architectural decision.
+      placeholder: "e.g., Replace stdin/stdout Python sidecar protocol with gRPC"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: >
+        What is the current state? What problem or limitation prompted this
+        proposal? Include relevant metrics, pain points, or constraints.
+      placeholder: |
+        The current stdin/stdout JSON protocol for the Python sidecar works for
+        simple request-response patterns but doesn't support streaming results
+        (needed for real-time Monte Carlo progress) or concurrent requests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Change
+      description: >
+        Describe the architectural change. What will be different? Include
+        affected modules, interfaces, and data flows.
+      placeholder: |
+        Replace the stdin/stdout protocol with gRPC:
+        - Define .proto files for simulation, market data, and analysis services
+        - Python sidecar runs as a gRPC server on a local port
+        - Electron main process uses @grpc/grpc-js as client
+        - Supports streaming RPCs for real-time simulation progress
+        - Supports concurrent requests from multiple renderer windows
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: >
+        What other approaches were evaluated? Why were they rejected?
+      placeholder: |
+        1. **WebSocket**: Supports streaming but adds HTTP server complexity.
+           Rejected — overkill for local IPC.
+        2. **Named pipes**: Lower overhead but platform-specific behavior on
+           Windows. Rejected — cross-platform consistency matters.
+        3. **Keep stdin/stdout, add message framing**: Minimal change but
+           doesn't solve concurrency. Rejected — same limitations persist.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact Analysis
+      description: >
+        Which files, modules, interfaces, and dependencies are affected?
+        What breaks? What needs migration?
+      placeholder: |
+        **Files affected:**
+        - `electron/services/python-sidecar.ts` — rewrite to gRPC client
+        - `python/portfolioos/__init__.py` — add gRPC server startup
+        - `python/portfolioos/simulation/` — expose as gRPC service
+        - `python/pyproject.toml` — add grpcio, grpcio-tools dependencies
+
+        **Breaking changes:**
+        - All existing sidecar message types need .proto definitions
+        - Sidecar startup/shutdown lifecycle changes
+
+        **Migration:**
+        - One-shot migration — old protocol removed, new protocol added
+        - No data migration needed (protocol change only)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraint Verification
+      description: Confirm this proposal respects PortfolioOS's architectural constraints.
+      options:
+        - label: "Works fully offline — no cloud dependency introduced"
+          required: true
+        - label: "Preserves privacy — no data leaves the user's machine without consent"
+          required: true
+        - label: "No new telemetry, tracking, or analytics"
+          required: true
+        - label: "Dependencies are license-compatible (PolyForm NC 1.0.0)"
+          required: true
+        - label: "Does not require storing user credentials"
+          required: true
+
+  - type: textarea
+    id: implementation-plan
+    attributes:
+      label: Implementation Plan
+      description: >
+        Optional. If you have a phased rollout plan or specific implementation
+        order, describe it here.
+      placeholder: |
+        Phase 1: Define .proto files and generate Python/TS stubs
+        Phase 2: Implement Python gRPC server with simulation service
+        Phase 3: Rewrite Electron sidecar client to use gRPC
+        Phase 4: Add streaming support for Monte Carlo progress
+        Phase 5: Remove old stdin/stdout protocol code
