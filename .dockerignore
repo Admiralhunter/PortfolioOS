@@ -1,0 +1,67 @@
+# Version control
+.git
+.gitignore
+
+# Node
+node_modules/
+dist/
+dist-electron/
+out/
+release/
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+python/.venv/
+agents/.venv/
+
+# Environment / Secrets
+.env
+.env.local
+.env.*.local
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Coverage / Reports
+.coverage
+.coverage.*
+htmlcov/
+.reports/
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Agent runtime artifacts
+agents/blackboard/blackboard.db
+agents/reports/
+
+# Docker (don't copy Docker files into the image)
+Dockerfile
+docker-compose.yml
+
+# Documentation (not needed at runtime)
+docs/
+*.md
+!python/README.md
+LICENSE
