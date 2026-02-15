@@ -297,13 +297,13 @@ class TestRun:
         # Verify blackboard state
         bb = Blackboard(db_path)
         findings = bb.get_findings(agent_name="todo_scanner")
-        # NOTE markers create findings but not tasks
-        assert len(findings) == 2  # TODO + FIXME (not NOTE)
+        # informational markers (NOTE) create findings but not tasks
+        assert len(findings) == 2  # 2 actionable, NOTE excluded
 
         tasks = bb.get_tasks(status="pending")
         assert len(tasks) == 2
 
-        # FIXME should be higher priority
+        # high-severity markers should get a higher (lower-numbered) priority
         fixme_tasks = [t for t in tasks if "FIXME" in t["title"]]
         assert fixme_tasks[0]["priority"] == 2
 

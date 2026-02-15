@@ -41,8 +41,9 @@ SKIP_DIRS = {
     "dist", "out", "release", ".vite", ".reports",
 }
 
-# Regex for TODO-style markers in comments
-# Matches: # TODO: text, // FIXME: text, /* HACK: text */, <!-- XXX: text -->
+# Regex for TODO-style markers in comments.
+# Matches comment-prefixed markers: TODO, FIXME, HACK, XXX, NOTE
+# in styles like  #  //  /*  <!--  --  %
 _MARKER_PATTERN = re.compile(
     r"(?:#|//|/\*|<!--|--|%)\s*"      # comment prefix
     r"(TODO|FIXME|HACK|XXX|NOTE)"     # marker
