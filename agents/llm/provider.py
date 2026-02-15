@@ -29,11 +29,14 @@ Usage::
 from __future__ import annotations
 
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+logger = logging.getLogger("agents.llm")
 
 
 @dataclass(frozen=True)
@@ -123,7 +126,7 @@ class AnthropicProvider(LLMProvider):
 
     API_URL = "https://api.anthropic.com/v1/messages"
 
-    def __init__(self, model: str = "claude-sonnet-4-20250514") -> None:
+    def __init__(self, model: str = "claude-sonnet-4-5-20250929") -> None:
         self.model = model
         self.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not self.api_key:
@@ -231,6 +234,7 @@ class OpenAICompatibleProvider(LLMProvider):
 _PROVIDERS: dict[str, type[LLMProvider]] = {
     "local": LMStudioProvider,
     "lm-studio": LMStudioProvider,
+    "claude-haiku": AnthropicProvider,
     "claude-sonnet": AnthropicProvider,
     "claude-opus": AnthropicProvider,
     "openai": OpenAICompatibleProvider,
@@ -238,10 +242,11 @@ _PROVIDERS: dict[str, type[LLMProvider]] = {
 }
 
 _MODEL_DEFAULTS: dict[str, str] = {
-    "claude-sonnet": "claude-sonnet-4-20250514",
+    "claude-haiku": "claude-haiku-4-5-20251001",
+    "claude-sonnet": "claude-sonnet-4-5-20250929",
     "claude-opus": "claude-opus-4-6",
     "openai": "gpt-4o",
-    "openrouter": "anthropic/claude-sonnet-4-20250514",
+    "openrouter": "anthropic/claude-sonnet-4-5-20250929",
 }
 
 
@@ -249,8 +254,13 @@ def get_provider(preference: str = "local") -> LLMProvider:
     """Instantiate an LLM provider by name.
 
     Args:
-        preference: One of "local", "lm-studio", "claude-sonnet",
-            "claude-opus", "openai", "openrouter".
+        preference: One of "local", "lm-studio", "claude-haiku",
+            "claude-sonnet", "claude-opus", "openai", "openrouter".
+
+    Environment variables:
+        AGENT_LLM_MODEL: Override the default model ID for the chosen
+            provider.  For example, set ``AGENT_LLM_MODEL=claude-haiku-4-5-20251001``
+            to use Haiku instead of the default Sonnet.
 
     Returns:
         An initialised LLMProvider ready for ``complete()`` calls.
@@ -265,9 +275,26 @@ def get_provider(preference: str = "local") -> LLMProvider:
             f"Choose from: {', '.join(sorted(_PROVIDERS))}"
         )
 
-    model = _MODEL_DEFAULTS.get(preference)
+    # Allow env var to override the model ID
+    model_override = os.environ.get("AGENT_LLM_MODEL", "").strip()
+    model = model_override or _MODEL_DEFAULTS.get(preference)
+
+    if model_override:
+        logger.info(
+            "Model override via AGENT_LLM_MODEL=%s (provider=%s)",
+            model_override, preference,
+        )
+
     if model and cls in (AnthropicProvider, OpenAICompatibleProvider):
-        return cls(model=model)
-    if model and cls is LMStudioProvider:
-        return cls(model=model)
-    return cls()
+        provider = cls(model=model)
+    elif model and cls is LMStudioProvider:
+        provider = cls(model=model)
+    else:
+        provider = cls()
+
+    logger.info(
+        "Initialized %s (model=%s)",
+        type(provider).__name__,
+        getattr(provider, "model", "unknown"),
+    )
+    return provider

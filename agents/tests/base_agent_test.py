@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from agents.base import Agent
+from agents.base import Agent, _detect_provider_preference
 from agents.blackboard.db import Blackboard
 from agents.llm.provider import LLMProvider, LLMResponse
 
@@ -179,6 +179,52 @@ class TestAgentReasonOrSkip:
         agent = SuccessAgent(db_path=db_path, llm=URLErrorLLM())
         result = agent.reason_or_skip("sys", "user", fallback="default")
         assert result == "default"
+
+
+class TestDetectProviderPreference:
+    """Tests for _detect_provider_preference auto-detection."""
+
+    def test_defaults_to_local(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("AGENT_LLM_PROVIDER", raising=False)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("CI", raising=False)
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        assert _detect_provider_preference("local") == "local"
+
+    def test_explicit_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("AGENT_LLM_PROVIDER", "claude-opus")
+        assert _detect_provider_preference("local") == "claude-opus"
+
+    def test_anthropic_key_in_ci(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("AGENT_LLM_PROVIDER", raising=False)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+        monkeypatch.setenv("CI", "true")
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+        assert _detect_provider_preference("local") == "claude-sonnet"
+
+    def test_agent_prefers_haiku_with_key(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delenv("AGENT_LLM_PROVIDER", raising=False)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+        assert _detect_provider_preference("claude-haiku") == "claude-haiku"
+
+    def test_openai_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("AGENT_LLM_PROVIDER", raising=False)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+        assert _detect_provider_preference("local") == "openai"
+
+    def test_ci_no_keys_warns_and_falls_back(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delenv("AGENT_LLM_PROVIDER", raising=False)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setenv("CI", "true")
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+        assert _detect_provider_preference("local") == "local"
 
 
 class TestAgentGitHubIntegration:

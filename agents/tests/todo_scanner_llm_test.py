@@ -58,6 +58,8 @@ class TestTodoScannerLLMWithoutLLM:
 
         assert result["markers_found"] == 4  # 2 TODO + 1 FIXME + 1 NOTE
         assert result["actionable"] == 3  # excludes NOTE
+        assert result["llm_used"] is False
+        assert result["llm_provider"] is None
 
     def test_fallback_creates_one_group_per_marker(
         self, scan_dir: Path, tmp_path: Path
@@ -122,6 +124,8 @@ class TestTodoScannerLLMWithLLM:
         result = agent.run()
 
         assert result["groups"] == 2
+        assert result["llm_used"] is True
+        assert result["llm_provider"] == "FakeLLM"
 
     def test_llm_malformed_response_falls_back(
         self, scan_dir: Path, tmp_path: Path
