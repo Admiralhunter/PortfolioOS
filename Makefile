@@ -1,4 +1,4 @@
-.PHONY: check-python check-agents check-js check-all lint test quality-gates
+.PHONY: check-python check-agents check-js check-all lint test test-js test-python test-agents lint-python lint-agents quality-gates
 
 # ── Python sidecar ──────────────────────────────────────────────
 check-python:
@@ -37,17 +37,19 @@ test-agents:
 lint-agents:
 	cd agents && uv run ruff check .
 
-# ── Frontend (uncomment once package.json exists) ───────────────
-# check-js:
-# 	pnpm lint
-# 	pnpm test
-# 	pnpm build
+# ── Electron / TypeScript ─────────────────────────────────────
+check-js:
+	pnpm run build
+	pnpm run test
+
+test-js:
+	pnpm run test
 
 # ── Combined ────────────────────────────────────────────────────
-check-all: check-python check-agents quality-gates
+check-all: check-python check-agents check-js quality-gates
 	@echo ""
 	@echo "All checks passed."
 
 # Default target
 lint: lint-python lint-agents
-test: test-python test-agents
+test: test-python test-agents test-js

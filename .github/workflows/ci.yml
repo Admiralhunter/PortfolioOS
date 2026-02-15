@@ -65,18 +65,39 @@ jobs:
             -type f \( -name '*.py' -o -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \) \
             2>/dev/null || true)
 
-  # JS/TS checks — uncomment once package.json is scaffolded
-  # frontend:
-  #   name: Frontend checks
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - uses: pnpm/action-setup@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         cache: pnpm
-  #     - run: pnpm install --frozen-lockfile
-  #     - run: pnpm lint
-  #     - run: pnpm test
-  #     - run: pnpm build
+  typescript:
+    name: TypeScript checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install uv (for sidecar tests)
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Set up Python (for sidecar tests)
+        run: uv python install
+        working-directory: python
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+        working-directory: python
+
+      - name: Install Node dependencies
+        run: pnpm install
+
+      - name: Type check
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test
