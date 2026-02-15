@@ -155,6 +155,31 @@ class TestAgentReasonOrSkip:
         result = agent.reason_or_skip("sys", "user", fallback="default")
         assert result == "default"
 
+    def test_connection_error_returns_fallback(self, tmp_path: Path) -> None:
+        """When the LLM endpoint is unreachable, return the fallback."""
+
+        class UnreachableLLM(LLMProvider):
+            def complete(self, **kwargs: Any) -> LLMResponse:
+                raise ConnectionRefusedError("[Errno 111] Connection refused")
+
+        db_path = tmp_path / "test.db"
+        agent = SuccessAgent(db_path=db_path, llm=UnreachableLLM())
+        result = agent.reason_or_skip("sys", "user", fallback="default")
+        assert result == "default"
+
+    def test_url_error_returns_fallback(self, tmp_path: Path) -> None:
+        """When a urllib URLError occurs, return the fallback."""
+        import urllib.error
+
+        class URLErrorLLM(LLMProvider):
+            def complete(self, **kwargs: Any) -> LLMResponse:
+                raise urllib.error.URLError("connection refused")
+
+        db_path = tmp_path / "test.db"
+        agent = SuccessAgent(db_path=db_path, llm=URLErrorLLM())
+        result = agent.reason_or_skip("sys", "user", fallback="default")
+        assert result == "default"
+
 
 class TestAgentGitHubIntegration:
     def test_no_github_returns_none(self, tmp_path: Path) -> None:

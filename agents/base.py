@@ -197,10 +197,20 @@ class Agent:
 
         Useful for agents that can do basic work without an LLM
         (e.g. regex scanning) but produce richer output with one.
+
+        Returns the fallback when:
+        - No LLM provider is configured (``self.llm is None``)
+        - The LLM endpoint is unreachable (connection refused, timeout, etc.)
         """
         if self.llm is None:
             return fallback
-        return self.reason(system, user, **kwargs)
+        try:
+            return self.reason(system, user, **kwargs)
+        except OSError:
+            # OSError covers ConnectionRefusedError, urllib.error.URLError,
+            # TimeoutError, and other network-related failures that indicate
+            # the LLM endpoint is not reachable.
+            return fallback
 
     # -- GitHub Issues helpers ----------------------------------------------
 
