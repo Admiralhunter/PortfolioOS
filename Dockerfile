@@ -49,7 +49,7 @@ COPY extra-ca-cert[s]/ /tmp/extra-certs/
 RUN mkdir -p /usr/local/share/ca-certificates && \
     touch /usr/local/share/ca-certificates/custom-ca-bundle.pem && \
     for cert in /tmp/extra-certs/*.crt; do \
-      [ -f "$cert" ] && { cat "$cert"; echo ""; } >> /usr/local/share/ca-certificates/custom-ca-bundle.pem; \
+      [ -f "$cert" ] && { cat "$cert"; echo ""; } >> /usr/local/share/ca-certificates/custom-ca-bundle.pem || true; \
     done
 ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/custom-ca-bundle.pem
 
