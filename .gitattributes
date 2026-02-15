@@ -1,0 +1,11 @@
+# Normalize line endings for all text files
+* text=auto
+
+# Force LF for shell scripts (prevents CRLF issues in Docker containers)
+*.sh text eol=lf
+
+# Force LF for other files that must have Unix line endings
+Makefile text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+.dockerignore text eol=lf

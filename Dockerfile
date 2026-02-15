@@ -96,9 +96,10 @@ COPY python/ ./python/
 COPY agents/ ./agents/
 COPY scripts/ ./scripts/
 
-# Copy entrypoint
+# Copy entrypoint (strip Windows \r line endings to prevent "bash\r: not found")
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create data directory for persistent storage
 RUN mkdir -p /home/portfolioos/.portfolioos && \
