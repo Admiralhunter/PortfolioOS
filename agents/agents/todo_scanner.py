@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import io
 import re
 import sys
 import time
+import tokenize
 from pathlib import Path
 from typing import Any
 
@@ -106,8 +108,80 @@ def _collect_source_files(repo_root: Path) -> list[Path]:
     return sorted(files)
 
 
-def _extract_todos(file_path: Path) -> list[dict[str, Any]]:
-    """Extract TODO-style markers from a single file."""
+def _match_marker(text: str) -> tuple[str, str] | None:
+    """Try to match a TODO-style marker in *text*.
+
+    Returns ``(MARKER, description)`` or ``None``.
+    """
+    m = _MARKER_PATTERN.search(text)
+    if not m:
+        return None
+    marker = m.group(1).upper()
+    raw = m.group(2).strip()
+    for suffix in ("-->", "*/"):
+        raw = raw.removesuffix(suffix)
+    description = raw.strip()
+    if not description:
+        return None
+    return marker, description
+
+
+def _extract_todos_python(file_path: Path) -> list[dict[str, Any]]:
+    """Extract TODO markers from a Python file using the tokenizer.
+
+    The ``tokenize`` module yields only real ``COMMENT`` tokens, so markers
+    inside string literals (single-line or multi-line) are never matched.
+    """
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    results: list[dict[str, Any]] = []
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(content).readline)
+        for tok_type, tok_string, start, _end, _line in tokens:
+            if tok_type != tokenize.COMMENT:
+                continue
+            found = _match_marker(tok_string)
+            if found:
+                results.append({
+                    "marker": found[0],
+                    "description": found[1],
+                    "line_number": start[0],
+                })
+    except tokenize.TokenError:
+        # File has a syntax error — fall back to regex scan
+        return _extract_todos_regex(file_path)
+
+    return results
+
+
+def _likely_in_string(line: str, match_start: int) -> bool:
+    """Heuristic for non-Python files: return True if *match_start* is likely
+    inside a string literal.
+
+    Counts unescaped quote characters before the match position.  An odd
+    count means the match sits between an opening quote and a closing one.
+    """
+    prefix = line[:match_start]
+    for quote in ('"', "'"):
+        count = 0
+        i = 0
+        while i < len(prefix):
+            if prefix[i] == "\\" and i + 1 < len(prefix):
+                i += 2
+                continue
+            if prefix[i] == quote:
+                count += 1
+            i += 1
+        if count % 2 == 1:
+            return True
+    return False
+
+
+def _extract_todos_regex(file_path: Path) -> list[dict[str, Any]]:
+    """Regex-based extraction with string-literal heuristic (non-Python files)."""
     try:
         content = file_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -117,19 +191,27 @@ def _extract_todos(file_path: Path) -> list[dict[str, Any]]:
     for line_num, line in enumerate(content.splitlines(), start=1):
         match = _MARKER_PATTERN.search(line)
         if match:
-            marker = match.group(1).upper()
-            raw = match.group(2).strip()
-            for suffix in ("-->", "*/"):
-                raw = raw.removesuffix(suffix)
-            description = raw.strip()
-            if not description:
+            if _likely_in_string(line, match.start()):
                 continue
-            results.append({
-                "marker": marker,
-                "description": description,
-                "line_number": line_num,
-            })
+            found = _match_marker(line)
+            if found:
+                results.append({
+                    "marker": found[0],
+                    "description": found[1],
+                    "line_number": line_num,
+                })
     return results
+
+
+def _extract_todos(file_path: Path) -> list[dict[str, Any]]:
+    """Extract TODO-style markers from a single file.
+
+    Uses Python's ``tokenize`` module for ``.py`` files (zero false positives
+    from string literals).  Falls back to regex + heuristic for other languages.
+    """
+    if file_path.suffix == ".py":
+        return _extract_todos_python(file_path)
+    return _extract_todos_regex(file_path)
 
 
 def run(repo_root: Path, db_path: Path | None = None) -> dict[str, int]:

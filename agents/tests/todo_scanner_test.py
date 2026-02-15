@@ -6,6 +6,8 @@ from pathlib import Path
 from agents.agents.todo_scanner import (
     _collect_source_files,
     _extract_todos,
+    _extract_todos_python,
+    _likely_in_string,
     _load_ignore_patterns,
     _should_scan,
     run,
@@ -89,6 +91,88 @@ class TestCollectSourceFilesWithIgnore:
         names = {f.name for f in files}
         assert "app.py" in names
         assert "app_test.py" not in names
+
+
+class TestLikelyInString:
+    def test_real_comment_not_in_string(self) -> None:
+        line = "    # TODO: real task"
+        assert not _likely_in_string(line, line.index("#"))
+
+    def test_marker_inside_double_quoted_string(self) -> None:
+        line = 'f.write_text("# TODO: fixture data")'
+        assert _likely_in_string(line, line.index("#"))
+
+    def test_marker_inside_single_quoted_string(self) -> None:
+        line = "f.write_text('# FIXME: fixture data')"
+        assert _likely_in_string(line, line.index("#"))
+
+    def test_marker_after_closed_string(self) -> None:
+        line = 'x = "hello"  # TODO: real task'
+        assert not _likely_in_string(line, line.index("#"))
+
+    def test_escaped_quote_not_counted(self) -> None:
+        line = r'x = "say \"hi\""  # TODO: real task'
+        assert not _likely_in_string(line, line.rindex("#"))
+
+    def test_ts_marker_inside_string(self) -> None:
+        line = 'const s = "// TODO: not real";'
+        assert _likely_in_string(line, line.index("/"))
+
+
+class TestExtractTodosPythonTokenizer:
+    """Tests that Python tokenizer-based extraction ignores string literals."""
+
+    def test_skips_marker_inside_single_line_string(self, tmp_path: Path) -> None:
+        f = tmp_path / "test.py"
+        f.write_text('f.write_text("# TODO: fixture data\\n")\n')
+        result = _extract_todos_python(f)
+        assert len(result) == 0
+
+    def test_skips_marker_inside_multiline_string(self, tmp_path: Path) -> None:
+        f = tmp_path / "test.py"
+        f.write_text(
+            'x = """\n'
+            '# TODO: inside triple-quoted string\n'
+            '# FIXME: also inside\n'
+            '"""\n'
+        )
+        result = _extract_todos_python(f)
+        assert len(result) == 0
+
+    def test_keeps_real_comment_after_string(self, tmp_path: Path) -> None:
+        f = tmp_path / "test.py"
+        f.write_text('x = "hello"  # TODO: real task\n')
+        result = _extract_todos_python(f)
+        assert len(result) == 1
+        assert result[0]["description"] == "real task"
+
+    def test_mixed_real_and_string_markers(self, tmp_path: Path) -> None:
+        f = tmp_path / "test.py"
+        f.write_text(
+            '# TODO: real task\n'
+            'f.write_text("# FIXME: fake\\n")\n'
+            '# HACK: another real one\n'
+        )
+        result = _extract_todos_python(f)
+        assert len(result) == 2
+        assert result[0]["marker"] == "TODO"
+        assert result[1]["marker"] == "HACK"
+
+    def test_dispatches_to_tokenizer_for_py(self, tmp_path: Path) -> None:
+        """_extract_todos routes .py files to the tokenizer path."""
+        f = tmp_path / "test.py"
+        f.write_text('f.write_text("# TODO: fake\\n")\n# TODO: real\n')
+        result = _extract_todos(f)
+        assert len(result) == 1
+        assert result[0]["description"] == "real"
+
+    def test_dispatches_to_regex_for_ts(self, tmp_path: Path) -> None:
+        """_extract_todos routes non-.py files to the regex path."""
+        f = tmp_path / "test.ts"
+        f.write_text("// TODO: add validation\n")
+        result = _extract_todos(f)
+        assert len(result) == 1
+        assert result[0]["marker"] == "TODO"
 
 
 class TestExtractTodos:
