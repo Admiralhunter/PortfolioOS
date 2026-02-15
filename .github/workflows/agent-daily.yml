@@ -1,9 +1,11 @@
 name: Daily Agent Cycle
 
 on:
-  schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM UTC
-  workflow_dispatch:       # Manual trigger
+  # --- Event-based triggers (commented out — re-enable when ready) ---
+  # schedule:
+  #   - cron: '0 6 * * *'  # Daily at 6 AM UTC
+  # -------------------------------------------------------------------
+  workflow_dispatch:       # Manual trigger (ad-hoc only for now)
 
 permissions:
   contents: read
