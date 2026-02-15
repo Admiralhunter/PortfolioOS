@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import re
 import sys
 import time
@@ -66,18 +67,41 @@ SEVERITY_MAP: dict[str, str] = {
 }
 
 
-def _should_scan(path: Path) -> bool:
+def _load_ignore_patterns(repo_root: Path) -> list[str]:
+    """Load glob patterns from .todoscanignore if it exists."""
+    ignore_file = repo_root / ".todoscanignore"
+    if not ignore_file.is_file():
+        return []
+    patterns: list[str] = []
+    for line in ignore_file.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            patterns.append(stripped)
+    return patterns
+
+
+def _should_scan(path: Path, ignore_patterns: list[str] | None = None) -> bool:
     """Check if a file should be scanned."""
     if path.suffix not in SOURCE_EXTENSIONS:
         return False
-    return all(part not in SKIP_DIRS for part in path.parts)
+    if not all(part not in SKIP_DIRS for part in path.parts):
+        return False
+    if ignore_patterns:
+        path_str = str(path)
+        for pattern in ignore_patterns:
+            if fnmatch.fnmatch(path_str, pattern):
+                return False
+    return True
 
 
 def _collect_source_files(repo_root: Path) -> list[Path]:
     """Walk the repo and collect scannable source files."""
+    ignore_patterns = _load_ignore_patterns(repo_root)
     files: list[Path] = []
     for path in repo_root.rglob("*"):
-        if path.is_file() and _should_scan(path.relative_to(repo_root)):
+        if path.is_file() and _should_scan(
+            path.relative_to(repo_root), ignore_patterns
+        ):
             files.append(path)
     return sorted(files)
 

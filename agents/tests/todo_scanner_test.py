@@ -6,6 +6,7 @@ from pathlib import Path
 from agents.agents.todo_scanner import (
     _collect_source_files,
     _extract_todos,
+    _load_ignore_patterns,
     _should_scan,
     run,
 )
@@ -30,6 +31,64 @@ class TestShouldScan:
 
     def test_pycache(self) -> None:
         assert not _should_scan(Path("src/__pycache__/mod.py"))
+
+
+class TestShouldScanIgnorePatterns:
+    def test_exact_path_ignored(self) -> None:
+        patterns = ["agents/tests/todo_scanner_test.py"]
+        assert not _should_scan(
+            Path("agents/tests/todo_scanner_test.py"), patterns
+        )
+
+    def test_glob_pattern_ignored(self) -> None:
+        patterns = ["agents/tests/*_test.py"]
+        assert not _should_scan(
+            Path("agents/tests/todo_scanner_test.py"), patterns
+        )
+
+    def test_non_matching_path_allowed(self) -> None:
+        patterns = ["agents/tests/*_test.py"]
+        assert _should_scan(Path("src/app.py"), patterns)
+
+    def test_no_patterns_allows_all(self) -> None:
+        assert _should_scan(Path("src/foo.py"), [])
+        assert _should_scan(Path("src/foo.py"), None)
+
+
+class TestLoadIgnorePatterns:
+    def test_loads_patterns_from_file(self, tmp_path: Path) -> None:
+        ignore = tmp_path / ".todoscanignore"
+        ignore.write_text(
+            "# comment line\n"
+            "agents/tests/*_test.py\n"
+            "\n"
+            "  docs/*.md  \n"
+        )
+        patterns = _load_ignore_patterns(tmp_path)
+        assert patterns == ["agents/tests/*_test.py", "docs/*.md"]
+
+    def test_returns_empty_when_no_file(self, tmp_path: Path) -> None:
+        assert _load_ignore_patterns(tmp_path) == []
+
+
+class TestCollectSourceFilesWithIgnore:
+    def test_ignores_files_matching_todoscanignore(
+        self, tmp_path: Path
+    ) -> None:
+        src = tmp_path / "src"
+        src.mkdir()
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (src / "app.py").write_text("")
+        (tests / "app_test.py").write_text("")
+
+        ignore = tmp_path / ".todoscanignore"
+        ignore.write_text("tests/*_test.py\n")
+
+        files = _collect_source_files(tmp_path)
+        names = {f.name for f in files}
+        assert "app.py" in names
+        assert "app_test.py" not in names
 
 
 class TestExtractTodos:
