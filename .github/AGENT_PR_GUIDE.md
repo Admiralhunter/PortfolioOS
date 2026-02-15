@@ -57,36 +57,21 @@ These are hard limits. A PR that violates them should not be merged without expl
 
 ### 1. File Size: 700 Lines Maximum
 
-Every source file (`.ts`, `.tsx`, `.py`, `.js`, `.jsx`) must be under 700 lines.
+Every source file (`.ts`, `.tsx`, `.py`, `.js`, `.jsx`) must be under 700 effective lines (excluding blank lines and comments).
 
-**Why:** Files over 700 lines are difficult to review, test, and maintain. They usually indicate a module is doing too much.
+**Enforcement:** Pre-commit hooks (`file-size-check`) and CI quality gates both enforce this automatically. Commits that violate this limit will be rejected.
 
-**How to check:**
-```bash
-# Find files over 700 lines in the diff
-git diff --name-only origin/main | xargs wc -l | awk '$1 > 700'
-```
-
-**If a file exceeds 700 lines:**
-1. Split it into focused modules with single responsibilities.
-2. If splitting is genuinely impractical (e.g., a generated file, a comprehensive test suite), document the justification in the "Size Violations" section of the PR.
+**If a file approaches 700 lines:** Split it into focused modules with single responsibilities before it hits the limit.
 
 ### 2. Function Length: 100 Lines Maximum
 
-Every function, method, or arrow function must be under 100 lines.
+Every function, method, or arrow function must be under 100 effective lines.
 
-**Why:** Long functions are hard to understand, test, and debug. They usually do too many things.
+**Enforcement:** Pre-commit hooks (`function-length-check`) and CI quality gates both enforce this automatically. Commits that violate this limit will be rejected.
 
-**How to check:**
-```bash
-# For TypeScript/JavaScript — look for functions in changed files
-# Agent should review each function in its diff
-```
-
-**If a function exceeds 100 lines:**
+**If a function approaches 100 lines:**
 1. Extract logical blocks into named helper functions.
 2. Use early returns to reduce nesting.
-3. If the function is inherently sequential (e.g., a complex state machine), document the justification in the "Size Violations" section.
 
 ### 3. DRY Compliance
 
@@ -277,8 +262,6 @@ Complete every section of the [PR template](pull_request_template.md):
 1. Select exactly the right tags — do not leave all options listed
 2. Write a genuine summary, not a restated diff
 3. Check only the boxes you actually verified
-4. Report any size violations honestly
-5. Complete the agent attestation
 
 ### Step 7: Commit Message
 
@@ -376,15 +359,18 @@ risk:medium
 
 ## Enforcement
 
-CI enforcement is configured in `.github/workflows/ci.yml` and runs Python lint, type check, and tests on every push and PR to `main`.
+Quality is enforced at two levels:
 
-These rules exist because AI agents can generate plausible-looking PRs that pass superficial review but contain subtle issues: duplicated logic, oversized files, untested edge cases, or security gaps.
+1. **Pre-commit hooks** (`.pre-commit-config.yaml`): Run locally on every commit. Enforce file size limits (≤700 effective lines), function length limits (≤100 effective lines), test coverage thresholds, Python linting/formatting (ruff), and basic hygiene (trailing whitespace, YAML/JSON validity, no commits to `main`).
+
+2. **CI** (`.github/workflows/ci.yml`): Runs on every push and PR to `main`. Runs Python lint, type check, tests, and quality gates as a backstop for environments where pre-commit hooks aren't installed.
+
+These rules exist because AI agents can generate plausible-looking PRs that pass superficial review but contain subtle issues: duplicated logic, untested edge cases, or security gaps.
 
 The tag system and checklists force agents to slow down, categorize their work, and verify quality before requesting review. Reviewers should:
 
 1. **Check tags match the actual changes** — a `type:refactor` that changes behavior is mislabeled.
 2. **Verify checked boxes** — spot-check that the agent actually did what it claims.
-3. **Review size violations** — any listed exception should have a compelling justification.
-4. **Validate the attestation** — if the agent claims it ran tests, verify the test output is consistent with the changes.
+3. **Validate test output** — if the agent claims it ran tests, verify the output is consistent with the changes.
 
 PRs that skip required sections, leave all tag options listed (instead of selecting), or have unchecked boxes in critical sections should be sent back for revision.

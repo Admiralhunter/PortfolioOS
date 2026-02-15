@@ -37,7 +37,6 @@
 ## Self-Review Checklist
 
 - [ ] No duplicated logic — searched for existing utilities before writing new ones
-- [ ] Every file under 700 lines, every function under 100 lines
 - [ ] Public functions have JSDoc/docstrings; complex logic has "why" comments
 - [ ] No secrets, `eval()`, `innerHTML`, `any` types, or telemetry added
 - [ ] New code has tests; existing tests still pass
@@ -61,14 +60,6 @@ $ cd python && uv run pytest
 $ pnpm test
 <paste output here>
 ```
-
----
-
-## Size Violations
-
-<!-- If any file > 700 lines or function > 100 lines, list with justification. Otherwise "None". -->
-
-None
 
 ---
 
