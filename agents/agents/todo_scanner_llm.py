@@ -24,9 +24,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("agents.todo_scanner_llm")
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
@@ -88,7 +91,7 @@ class TodoScannerLLMAgent(Agent):
     """
 
     name = "todo-scanner"
-    model_pref = "local"
+    model_pref = "claude-haiku"
 
     def __init__(
         self,
@@ -101,6 +104,7 @@ class TodoScannerLLMAgent(Agent):
 
     def execute(self) -> dict[str, Any]:
         # -- Phase 1: regex extraction (fast, deterministic) ----------------
+        logger.info("Phase 1: scanning source files for TODO markers...")
         source_files = _collect_source_files(self.repo_root)
         all_markers: list[dict[str, Any]] = []
 
@@ -112,20 +116,43 @@ class TodoScannerLLMAgent(Agent):
                 all_markers.append(item)
 
         actionable = [m for m in all_markers if m["marker"] != "NOTE"]
+        logger.info(
+            "Phase 1 complete: %d files scanned, %d markers found "
+            "(%d actionable)",
+            len(source_files), len(all_markers), len(actionable),
+        )
 
         # -- Phase 2: LLM triage (optional) --------------------------------
+        if self.llm is not None:
+            logger.info(
+                "Phase 2: triaging %d markers with LLM (%s)...",
+                len(actionable),
+                type(self.llm).__name__,
+            )
+        else:
+            logger.warning(
+                "Phase 2: NO LLM available — using static priority "
+                "fallback (markers will NOT be grouped or intelligently "
+                "prioritised)"
+            )
         groups = self._triage_with_llm(actionable)
 
         # -- Phase 3: output ------------------------------------------------
+        logger.info(
+            "Phase 3: writing results (%d groups)...", len(groups),
+        )
         self._write_to_blackboard(all_markers)
         issues_created = self._create_github_issues(groups)
 
+        llm_used = self.llm is not None
         summary = {
             "files_scanned": len(source_files),
             "markers_found": len(all_markers),
             "actionable": len(actionable),
             "groups": len(groups),
             "issues_created": issues_created,
+            "llm_used": llm_used,
+            "llm_provider": type(self.llm).__name__ if llm_used else None,
         }
         print(json.dumps(summary, indent=2))
         return summary
@@ -162,9 +189,18 @@ class TodoScannerLLMAgent(Agent):
         if raw:
             groups = self._parse_triage_response(raw, markers)
             if groups:
+                logger.info(
+                    "LLM triage successful: %d groups from %d markers",
+                    len(groups), len(markers),
+                )
                 return groups
+            logger.warning(
+                "LLM returned unparseable response, falling back to "
+                "static priorities"
+            )
 
         # Fallback: one group per marker, static priorities
+        logger.info("Using static fallback: 1 group per marker")
         return [
             {
                 "title": f"{m['marker']}: {m['description'][:100]}",
@@ -284,7 +320,17 @@ def main() -> None:
         "--db-path", type=Path, default=None,
         help="Path to the blackboard database",
     )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable verbose (DEBUG) logging",
+    )
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(name)s | %(levelname)s | %(message)s",
+    )
+
     agent = TodoScannerLLMAgent(repo_root=args.repo_root, db_path=args.db_path)
     agent.run()
 

@@ -29,6 +29,8 @@ Usage::
 
 from __future__ import annotations
 
+import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -41,6 +43,74 @@ sys.path.insert(0, str(_REPO_ROOT))
 from agents.blackboard.db import Blackboard  # noqa: E402
 from agents.github.issues import GitHubIssues  # noqa: E402
 from agents.llm.provider import LLMProvider, LLMResponse, get_provider  # noqa: E402
+
+logger = logging.getLogger("agents")
+
+
+def _detect_provider_preference(default: str) -> str:
+    """Auto-detect the best LLM provider based on environment.
+
+    Priority:
+    1. ``AGENT_LLM_PROVIDER`` env var (explicit override)
+    2. Agent's own ``model_pref`` if it names a cloud provider and the
+       required API key is available (e.g. ``claude-haiku`` + ANTHROPIC_API_KEY)
+    3. CI with ``ANTHROPIC_API_KEY`` set -> ``"claude-sonnet"``
+    4. ``ANTHROPIC_API_KEY`` set (any env) -> ``"claude-sonnet"``
+    5. ``OPENAI_API_KEY`` set -> ``"openai"``
+    6. Fall back to *default* (usually ``"local"``)
+    """
+    explicit = os.environ.get("AGENT_LLM_PROVIDER", "").strip()
+    if explicit:
+        logger.info("LLM provider override via AGENT_LLM_PROVIDER=%s", explicit)
+        return explicit
+
+    in_ci = os.environ.get("CI") == "true"
+    in_gha = os.environ.get("GITHUB_ACTIONS") == "true"
+
+    # If the agent already prefers a specific cloud provider, honour it
+    # when the required credentials are available.
+    _anthropic_prefs = {"claude-haiku", "claude-sonnet", "claude-opus"}
+    _openai_prefs = {"openai", "openrouter"}
+
+    if default in _anthropic_prefs and os.environ.get("ANTHROPIC_API_KEY"):
+        logger.info(
+            "Agent prefers %s and ANTHROPIC_API_KEY is set — honouring",
+            default,
+        )
+        return default
+
+    if default in _openai_prefs and os.environ.get("OPENAI_API_KEY"):
+        logger.info(
+            "Agent prefers %s and OPENAI_API_KEY is set — honouring",
+            default,
+        )
+        return default
+
+    # Generic auto-detection for agents that default to "local"
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        if in_ci or in_gha:
+            logger.info(
+                "CI environment detected (GITHUB_ACTIONS=%s) with "
+                "ANTHROPIC_API_KEY set — using claude-sonnet provider",
+                in_gha,
+            )
+        else:
+            logger.info(
+                "ANTHROPIC_API_KEY found — using claude-sonnet provider"
+            )
+        return "claude-sonnet"
+
+    if os.environ.get("OPENAI_API_KEY"):
+        logger.info("OPENAI_API_KEY found — using openai provider")
+        return "openai"
+
+    if in_ci or in_gha:
+        logger.warning(
+            "Running in CI without any LLM API key set — "
+            "LLM features will be skipped"
+        )
+
+    return default
 
 
 class Agent:
@@ -72,15 +142,27 @@ class Agent:
     ) -> None:
         self.bb = Blackboard(db_path) if db_path else Blackboard()
 
-        # LLM — allow injection for testing, otherwise use preference
+        # LLM — allow injection for testing, otherwise auto-detect
         if llm is not None:
             self.llm: LLMProvider | None = llm
+            logger.info(
+                "[%s] LLM provider injected: %s",
+                self.name, type(llm).__name__,
+            )
         else:
+            resolved_pref = _detect_provider_preference(self.model_pref)
             try:
-                self.llm = get_provider(self.model_pref)
-            except (OSError, ValueError):
-                # No API key or LM Studio not running — agent can still
-                # do non-LLM work (regex scanning, etc.)
+                self.llm = get_provider(resolved_pref)
+                logger.info(
+                    "[%s] LLM provider ready: %s (preference=%s)",
+                    self.name, type(self.llm).__name__, resolved_pref,
+                )
+            except (OSError, ValueError) as exc:
+                logger.warning(
+                    "[%s] LLM unavailable (preference=%s): %s — "
+                    "LLM features will be skipped",
+                    self.name, resolved_pref, exc,
+                )
                 self.llm = None
 
         # GitHub Issues — optional, for agents running in CI
@@ -203,13 +285,22 @@ class Agent:
         - The LLM endpoint is unreachable (connection refused, timeout, etc.)
         """
         if self.llm is None:
+            logger.info(
+                "[%s] Skipping LLM call — no provider available, "
+                "using fallback",
+                self.name,
+            )
             return fallback
         try:
             return self.reason(system, user, **kwargs)
-        except OSError:
+        except OSError as exc:
             # OSError covers ConnectionRefusedError, urllib.error.URLError,
             # TimeoutError, and other network-related failures that indicate
             # the LLM endpoint is not reachable.
+            logger.warning(
+                "[%s] LLM endpoint unreachable (%s), using fallback",
+                self.name, exc,
+            )
             return fallback
 
     # -- GitHub Issues helpers ----------------------------------------------
