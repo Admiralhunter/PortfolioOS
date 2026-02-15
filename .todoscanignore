@@ -1,0 +1,7 @@
+# Files and directories to exclude from TODO scanner.
+# Supports glob patterns (fnmatch-style).
+# One pattern per line. Lines starting with # are comments.
+#
+# Most false positives (markers inside string literals) are detected
+# automatically. Use this file only for edge cases the heuristic misses,
+# such as generated files or vendor code.
