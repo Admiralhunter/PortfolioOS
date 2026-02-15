@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+from scipy import stats
+
 if TYPE_CHECKING:
-    import numpy as np
     from numpy.typing import NDArray
 
 
@@ -19,6 +21,8 @@ def percentile_rank(
 ) -> float:
     """Calculate the percentile rank of a target value within a distribution.
 
+    Uses scipy.stats.percentileofscore with "rank" interpolation.
+
     Args:
         values: Array of observed values.
         target: The value to rank.
@@ -26,11 +30,8 @@ def percentile_rank(
     Returns:
         Percentile rank as a float between 0 and 100.
 
-    Raises:
-        NotImplementedError: Placeholder until implementation is complete.
-
     """
-    raise NotImplementedError("Percentile rank not yet implemented")
+    return float(stats.percentileofscore(values, target, kind="rank"))
 
 
 def bootstrap_returns(
@@ -40,6 +41,9 @@ def bootstrap_returns(
     seed: int | None = None,
 ) -> NDArray[np.float64]:
     """Generate bootstrapped return sequences from historical data.
+
+    Draws with replacement from the historical return distribution
+    to create synthetic multi-year return paths.
 
     Args:
         historical_returns: Array of historical annual returns.
@@ -51,7 +55,12 @@ def bootstrap_returns(
         NDArray of shape (n_samples, n_years) with bootstrapped returns.
 
     Raises:
-        NotImplementedError: Placeholder until implementation is complete.
+        ValueError: If historical_returns is empty.
 
     """
-    raise NotImplementedError("Bootstrap returns not yet implemented")
+    if len(historical_returns) == 0:
+        msg = "historical_returns must not be empty"
+        raise ValueError(msg)
+    rng = np.random.default_rng(seed)
+    indices = rng.integers(0, len(historical_returns), size=(n_samples, n_years))
+    return historical_returns[indices]
