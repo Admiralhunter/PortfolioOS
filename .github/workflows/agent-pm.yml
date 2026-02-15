@@ -1,13 +1,15 @@
 name: Project Manager Agent
 
 on:
-  issues:
-    types: [opened, labeled]
+  # --- Event-based triggers (commented out — re-enable when ready) ---
+  # issues:
+  #   types: [opened, labeled]
+  # -------------------------------------------------------------------
   workflow_dispatch:
     inputs:
       issue_number:
         description: "Issue number to triage"
-        required: false
+        required: true
         type: number
 
 permissions:
@@ -18,23 +20,27 @@ jobs:
   triage:
     name: Triage Issue
     runs-on: ubuntu-latest
-    # Only run on new issues or when status:needs-triage is added
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.action == 'opened' ||
-      (github.event.action == 'labeled' &&
-       github.event.label.name == 'status:needs-triage')
+    # --- Event-based conditions (commented out — re-enable when ready) ---
+    # if: >
+    #   github.event_name == 'workflow_dispatch' ||
+    #   github.event.action == 'opened' ||
+    #   (github.event.action == 'labeled' &&
+    #    github.event.label.name == 'status:needs-triage')
+    # -------------------------------------------------------------------
     steps:
       - uses: actions/checkout@v6
 
       - name: Determine issue number
         id: issue
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
-          fi
+          # --- Event-based dispatch (commented out — re-enable when ready) ---
+          # if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          #   echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          # else
+          #   echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          # fi
+          # -------------------------------------------------------------------
+          echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
 
       - name: Check if issue was created by TODO scanner
         id: skip-check
