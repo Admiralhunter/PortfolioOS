@@ -5,6 +5,7 @@
   "main": ".vite/build/main.js",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
+  "packageManager": "pnpm@10.29.3",
   "author": "PortfolioOS Contributors",
   "scripts": {
     "start": "electron-forge start",

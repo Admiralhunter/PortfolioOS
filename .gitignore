@@ -61,3 +61,6 @@ yarn-error.log*
 
 # ── Python venvs ──
 python/.venv/
+
+# ── Docker build artifacts ──
+extra-ca-certs/

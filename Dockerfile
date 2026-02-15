@@ -3,28 +3,57 @@
 #
 # Build:  docker build -t portfolioos .
 # Run:    docker compose up   (recommended, handles X11/volumes)
+#
+# Proxy / corporate CA:
+#   If building behind a TLS-intercepting proxy, place CA certificates in
+#   extra-ca-certs/ before building. They will be installed into every stage.
+#   Example:
+#     mkdir -p extra-ca-certs
+#     cp /usr/local/share/ca-certificates/*.crt extra-ca-certs/
+#     docker build --network=host \
+#       --build-arg HTTP_PROXY="$HTTP_PROXY" \
+#       --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+#       -t portfolioos .
 
 # ---------------------------------------------------------------------------
 # Stage 1: Install Python dependencies
 # ---------------------------------------------------------------------------
 FROM python:3.13-slim AS python-deps
 
+# Optional extra CA certificates (for corporate proxy / MITM TLS).
+# python:3.13-slim ships with ca-certificates, so update-ca-certificates works.
+COPY extra-ca-cert[s]/ /usr/local/share/ca-certificates/extra/
+RUN update-ca-certificates 2>/dev/null || true
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 WORKDIR /app/python
 COPY python/pyproject.toml python/uv.lock python/.python-version python/README.md ./
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --native-tls
 
 WORKDIR /app/agents
 COPY agents/pyproject.toml agents/uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --native-tls
 
 # ---------------------------------------------------------------------------
 # Stage 2: Install Node dependencies
 # ---------------------------------------------------------------------------
 FROM node:22-slim AS node-deps
 
-RUN corepack enable && corepack prepare pnpm@10 --activate
+# Optional extra CA certificates (for corporate proxy / MITM TLS).
+# node:22-slim doesn't ship ca-certificates, so we manually create a PEM
+# bundle from any extra certs and point Node to it.
+COPY extra-ca-cert[s]/ /tmp/extra-certs/
+RUN mkdir -p /usr/local/share/ca-certificates && \
+    touch /usr/local/share/ca-certificates/custom-ca-bundle.pem && \
+    for cert in /tmp/extra-certs/*.crt; do \
+      [ -f "$cert" ] && { cat "$cert"; echo ""; } >> /usr/local/share/ca-certificates/custom-ca-bundle.pem; \
+    done
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/custom-ca-bundle.pem
+
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
 WORKDIR /app
 COPY .npmrc package.json pnpm-lock.yaml ./
@@ -38,8 +67,26 @@ FROM node:22-slim
 LABEL maintainer="PortfolioOS"
 LABEL description="PortfolioOS — local-first finance app (Docker-isolated)"
 
+# Optional extra CA certificates (for corporate proxy / MITM TLS).
+# Bootstrap TLS trust before apt-get: append extra certs to the system bundle
+# and switch apt sources to HTTPS so they work behind TLS-intercepting proxies.
+COPY extra-ca-cert[s]/ /usr/local/share/ca-certificates/extra/
+RUN mkdir -p /etc/ssl/certs && \
+    for cert in /usr/local/share/ca-certificates/extra/*.crt; do \
+      [ -f "$cert" ] && cat "$cert" >> /etc/ssl/certs/ca-certificates.crt; \
+    done; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+      sed -i 's|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list; \
+      sed -i 's|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list; \
+    fi; \
+    true
+
 # System dependencies for Electron, Python, and native modules
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     # Electron / Chromium runtime deps
     libgtk-3-0 \
     libnotify4 \
@@ -68,13 +115,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     # Misc
     procps \
+    && update-ca-certificates 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv (Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Enable pnpm
-RUN corepack enable && corepack prepare pnpm@10 --activate
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
 # Create non-root user for security
 RUN groupadd -r portfolioos && useradd -r -g portfolioos -m -s /bin/bash portfolioos
