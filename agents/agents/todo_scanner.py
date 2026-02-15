@@ -120,8 +120,7 @@ def run(repo_root: Path, db_path: Path | None = None) -> dict[str, int]:
 
     source_files = _collect_source_files(repo_root)
     counts: dict[str, int] = {}
-    total_new = 0
-    total_updated = 0
+    total_queued = 0
 
     for fpath in source_files:
         todos = _extract_todos(fpath)
@@ -147,34 +146,26 @@ def run(repo_root: Path, db_path: Path | None = None) -> dict[str, int]:
                 metadata={"marker": marker},
             )
 
-            # If this is a brand-new finding, also add it to the task queue
-            # (add_finding returns early for existing ones, so check if
-            # a task already exists for this finding)
-            existing_tasks = bb.get_tasks(status="pending")
-            already_queued = any(
-                t["source_finding_id"] == finding_id for t in existing_tasks
+            # add_task uses deterministic IDs and is idempotent,
+            # so duplicates are handled automatically.
+            bb.add_task(
+                source_agent=AGENT_NAME,
+                title=title,
+                description=(
+                    f"Address {marker} in {rel_path}:{item['line_number']}\n\n"
+                    f"{item['description']}"
+                ),
+                priority=PRIORITY_MAP[marker],
+                source_finding_id=finding_id,
             )
-            if not already_queued:
-                bb.add_task(
-                    source_agent=AGENT_NAME,
-                    title=title,
-                    description=(
-                        f"Address {marker} in {rel_path}:{item['line_number']}\n\n"
-                        f"{item['description']}"
-                    ),
-                    priority=PRIORITY_MAP[marker],
-                    source_finding_id=finding_id,
-                )
-                total_new += 1
-            else:
-                total_updated += 1
+            total_queued += 1
 
     elapsed = (time.monotonic_ns() // 1_000_000) - start_ms
     summary_msg = (
         f"Scanned {len(source_files)} files. "
         f"Found {sum(counts.values())} markers "
         f"({', '.join(f'{k}:{v}' for k, v in sorted(counts.items()))}). "
-        f"{total_new} new tasks, {total_updated} existing."
+        f"{total_queued} tasks queued."
     )
     bb.log_event(
         agent_name=AGENT_NAME,

@@ -6,9 +6,9 @@ don't construct raw SQL themselves.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
-import uuid
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,8 +23,16 @@ def _utcnow() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _new_id() -> str:
-    return uuid.uuid4().hex
+def _deterministic_id(*parts: str | None) -> str:
+    """Generate a deterministic 32-char hex ID by hashing the given parts.
+
+    This ensures the same logical entity (e.g. a TODO marker at a
+    specific location with a specific title) always receives the same
+    ID across independent runs, even when the database is recreated
+    from scratch between runs (as happens in CI).
+    """
+    key = "\x00".join(p or "" for p in parts)
+    return hashlib.sha256(key.encode()).hexdigest()[:32]
 
 
 class Blackboard:
@@ -99,7 +107,7 @@ class Blackboard:
                 )
                 return str(finding_id)
 
-            finding_id = _new_id()
+            finding_id = _deterministic_id(agent_name, file_path, title)
             conn.execute(
                 "INSERT INTO findings "
                 "(id, agent_name, severity, category, title, description, "
@@ -176,10 +184,30 @@ class Blackboard:
         priority: int = 3,
         source_finding_id: str | None = None,
     ) -> str:
-        """Add a task to the queue. Returns the new task ID."""
-        task_id = _new_id()
+        """Add a task to the queue. Returns the task ID.
+
+        Uses a deterministic ID derived from (source_agent, title) so
+        the same logical task always gets the same ID across runs.
+        If a task with the same ID already exists, it is updated
+        instead of duplicated (idempotent writes).
+        """
+        task_id = _deterministic_id(source_agent, title)
         now = _utcnow()
         with self._connect() as conn:
+            existing = conn.execute(
+                "SELECT id FROM task_queue WHERE id = ?",
+                (task_id,),
+            ).fetchone()
+
+            if existing:
+                conn.execute(
+                    "UPDATE task_queue SET description = ?, priority = ?, "
+                    "source_finding_id = ?, updated_at = ? "
+                    "WHERE id = ?",
+                    (description, priority, source_finding_id, now, task_id),
+                )
+                return task_id
+
             conn.execute(
                 "INSERT INTO task_queue "
                 "(id, source_agent, source_finding_id, title, description, "
