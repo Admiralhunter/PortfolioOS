@@ -1,0 +1,138 @@
+name: Bug Report
+description: Report incorrect behavior, calculation errors, or crashes.
+title: "fix: "
+labels: ["status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+
+        Use this template to report something that is broken. The PM agent will
+        triage this issue and determine severity. For financial calculation bugs,
+        include the expected vs. actual numbers — accuracy is critical.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: >
+        Clear, concise description of what is broken. What did you observe?
+      placeholder: "e.g., Monte Carlo simulation reports 95% success rate for a portfolio that should fail — the withdrawal amount ignores inflation adjustment after year 10."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected Module
+      description: Which module contains the bug?
+      options:
+        - Portfolio Manager
+        - Net Worth Tracker
+        - FIRE Simulator
+        - Market Intelligence
+        - LLM / AI Features
+        - Settings / Preferences
+        - Data Import / Export
+        - Electron Shell / IPC
+        - Python Sidecar
+        - Database Layer
+        - CI / Build
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Affected Scopes
+      description: Which parts of the codebase are involved? Select all that apply.
+      options:
+        - label: "Frontend (React components, hooks, stores under `src/`)"
+        - label: "Backend (Electron main process, IPC handlers under `electron/`)"
+        - label: "Database (DuckDB or SQLite under `electron/db/`)"
+        - label: "Python sidecar (simulations, analysis under `python/`)"
+        - label: "LLM integration (under `electron/llm/`)"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: >
+        Numbered steps to reproduce the bug. Include specific inputs, data, or
+        configuration that triggers it.
+      placeholder: |
+        1. Create a portfolio with 60/40 stock/bond allocation
+        2. Add $1M starting balance
+        3. Set withdrawal rate to 4% ($40,000/year)
+        4. Run Monte Carlo simulation with 30-year horizon
+        5. Observe reported success rate
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen? For financial calculations, include the expected numbers and methodology reference.
+      placeholder: |
+        Success rate should be approximately 82-87% for a 60/40 portfolio with
+        4% withdrawal over 30 years (per Trinity Study 1998 methodology).
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens? Include error messages, screenshots, or incorrect output values.
+      placeholder: |
+        Success rate is reported as 95.2%. Inspecting the simulation logs shows
+        that inflation adjustment stops being applied after trial year 10.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Moderate — Feature works but produces wrong results or has degraded UX
+        - Critical — Data corruption, crashes, security vulnerability, or wrong financial calculations that could mislead users
+        - Minor — Cosmetic issue, minor inconvenience, or edge case
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >
+        OS, Electron version, Python version, and any relevant configuration.
+      placeholder: |
+        - OS: macOS 14.2
+        - Electron: 33.x
+        - Python: 3.13
+        - DuckDB: 1.x
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs / Stack Trace
+      description: >
+        Paste any relevant error output, stack traces, or console logs.
+        Wrap in a code block.
+      render: shell
+
+  - type: textarea
+    id: fix-hint
+    attributes:
+      label: Possible Fix
+      description: >
+        Optional. If you have an idea of what's causing this or where the fix
+        should go, describe it here. This helps the Worker agent.
+      placeholder: |
+        The inflation adjustment loop in python/portfolioos/simulation/monte_carlo.py
+        likely has an off-by-one error in the year index. Check the
+        `adjust_withdrawal_for_inflation()` function around line 180.

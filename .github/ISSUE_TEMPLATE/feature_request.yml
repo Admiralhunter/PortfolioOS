@@ -1,0 +1,139 @@
+name: Feature Request
+description: Propose a new feature or capability for PortfolioOS.
+title: "feat: "
+labels: ["status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+
+        Use this template to propose new functionality. The PM agent will triage
+        this issue, assign priority and scope labels, and determine whether the
+        Worker agent can implement it autonomously.
+
+        **Before filing:** Check [docs/SPEC.md](../docs/SPEC.md) to see if this
+        feature is already planned.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: >
+        One or two sentences describing the feature. What should PortfolioOS do
+        that it doesn't do today?
+      placeholder: "e.g., Add a portfolio rebalancing calculator that suggests trades to return to target allocation percentages."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Feature Module
+      description: Which module does this feature belong to? See SPEC.md Section 5 for module definitions.
+      options:
+        - Portfolio Manager
+        - Net Worth Tracker
+        - FIRE Simulator
+        - Market Intelligence
+        - LLM / AI Features
+        - Settings / Preferences
+        - Data Import / Export
+        - Cross-cutting / Infrastructure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Affected Scopes
+      description: Which parts of the codebase will this feature likely touch? Select all that apply.
+      options:
+        - label: "Frontend (React components, hooks, stores under `src/`)"
+        - label: "Backend (Electron main process, IPC handlers under `electron/`)"
+        - label: "Database (DuckDB or SQLite schemas, queries under `electron/db/`)"
+        - label: "Python sidecar (simulations, analysis under `python/`)"
+        - label: "LLM integration (provider abstraction under `electron/llm/`)"
+        - label: "Configuration (package.json, tsconfig, pyproject.toml, etc.)"
+        - label: "CI / Workflows (GitHub Actions under `.github/workflows/`)"
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: >
+        Describe the feature from the user's perspective. Who benefits, what do
+        they do, and what outcome do they expect?
+      placeholder: |
+        As a FIRE-path investor, I want to see rebalancing suggestions when my
+        portfolio drifts more than 5% from target allocation, so that I can
+        minimize trades while staying on target.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: >
+        List specific, testable conditions that must be true when this feature
+        is complete. These become the Worker agent's implementation checklist.
+      placeholder: |
+        - [ ] User can set target allocation percentages per asset class
+        - [ ] System detects when any asset class drifts beyond a configurable threshold (default 5%)
+        - [ ] Rebalancing suggestions show specific buy/sell amounts
+        - [ ] All calculations work fully offline
+        - [ ] Cost basis impact is shown for taxable accounts
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: >
+        Optional. Constraints, design considerations, relevant prior art, or
+        references the implementing agent should be aware of.
+      placeholder: |
+        - Must use DuckDB for allocation queries (not SQLite)
+        - See Swensen (2005) for institutional rebalancing approaches
+        - Threshold-based rebalancing minimizes tax drag vs. calendar-based
+
+  - type: dropdown
+    id: priority-hint
+    attributes:
+      label: Priority Hint
+      description: >
+        Your suggestion for priority. The PM agent makes the final determination.
+      options:
+        - p2 — Important (default)
+        - p1 — Critical (blocks other work or core functionality)
+        - p3 — Nice to have
+    validations:
+      required: true
+
+  - type: dropdown
+    id: size-estimate
+    attributes:
+      label: Estimated Size
+      description: Rough estimate of implementation scope.
+      options:
+        - Medium (50–200 lines changed)
+        - Small (under 50 lines changed)
+        - Large (200+ lines changed)
+        - Unknown
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Privacy & Security Constraints
+      description: Confirm that this feature respects PortfolioOS's core constraints.
+      options:
+        - label: "This feature works fully offline (no cloud dependency for core functionality)"
+          required: true
+        - label: "This feature does not require storing user credentials"
+          required: true
+        - label: "This feature does not send data to external services without explicit user consent"
+          required: true

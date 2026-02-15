@@ -1,0 +1,109 @@
+name: Task
+description: Maintenance work — refactoring, dependency updates, configuration, CI/CD, testing, docs.
+title: "chore: "
+labels: ["status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Task
+
+        Use this template for non-feature, non-bug work: refactoring, dependency
+        updates, CI/CD changes, documentation, test coverage, performance
+        optimization, or other maintenance.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: What needs to be done and why?
+      placeholder: |
+        Split `electron/services/portfolio.ts` into separate modules for
+        holdings, transactions, and allocation logic. The file has grown to
+        680 lines and is approaching the 700-line quality gate.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Task Type
+      description: What kind of work is this?
+      options:
+        - "refactor — Restructure code without changing behavior"
+        - "chore — Build config, dependencies, tooling"
+        - "test — Add or improve test coverage"
+        - "docs — Documentation changes only"
+        - "perf — Performance optimization"
+        - "security — Security hardening"
+        - "ci — CI/CD pipeline changes"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Affected Scopes
+      description: Which parts of the codebase will this task touch?
+      options:
+        - label: "Frontend (`src/`)"
+        - label: "Backend (`electron/`)"
+        - label: "Database (`electron/db/`)"
+        - label: "Python sidecar (`python/`)"
+        - label: "LLM integration (`electron/llm/`)"
+        - label: "Configuration (package.json, tsconfig, pyproject.toml, etc.)"
+        - label: "CI / Workflows (`.github/workflows/`)"
+        - label: "Documentation (`docs/`)"
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Done When
+      description: >
+        Specific conditions that indicate this task is complete. The Worker agent
+        uses these as its checklist.
+      placeholder: |
+        - [ ] `portfolio.ts` split into `holdings.ts`, `transactions.ts`, `allocation.ts`
+        - [ ] All existing tests pass without modification
+        - [ ] No file exceeds 700 lines
+        - [ ] All imports updated across the codebase
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & References
+      description: >
+        Optional. Links to related issues, files that need attention, or
+        rationale for the work.
+      placeholder: |
+        Related to #45. The file was flagged by the quality-gates CI check
+        in the last nightly run. See agent report artifact from 2026-02-14.
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk Level
+      description: >
+        How risky is this change? See AGENT_PR_GUIDE.md for definitions.
+      options:
+        - "low — Isolated change, easily reversible"
+        - "medium — Touches shared interfaces or multiple modules"
+        - "high — Breaking changes, schema migrations, or security-sensitive"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: agent-eligible
+    attributes:
+      label: Agent Eligible
+      description: >
+        Can the Worker agent handle this autonomously, or does it need human
+        judgment?
+      options:
+        - "Yes — Worker agent can implement this"
+        - "Maybe — Agent can attempt, but may need human review of approach"
+        - "No — Requires human decision-making or external context"
+    validations:
+      required: true

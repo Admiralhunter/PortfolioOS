@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project Documentation
+    url: https://github.com/Admiralhunter/PortfolioOS/blob/main/docs/SPEC.md
+    about: Read the product specification before filing a feature request.
+  - name: Architecture Reference
+    url: https://github.com/Admiralhunter/PortfolioOS/blob/main/docs/ARCHITECTURE.md
+    about: Review the architecture design before proposing structural changes.
