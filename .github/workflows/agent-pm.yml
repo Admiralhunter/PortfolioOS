@@ -36,7 +36,21 @@ jobs:
             echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check if issue was created by TODO scanner
+        id: skip-check
+        run: |
+          LABELS=$(curl -sf \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}/labels" \
+            | python3 -c "import sys,json; labels=[l['name'] for l in json.load(sys.stdin)]; print('true' if 'agent:todo-scanner' in labels else 'false')")
+          echo "is_todo_scanner=$LABELS" >> "$GITHUB_OUTPUT"
+          if [ "$LABELS" = "true" ]; then
+            echo "::notice::Skipping triage — issue #${{ steps.issue.outputs.number }} was created by the TODO scanner agent"
+          fi
+
       - name: Run PM Agent via Claude Code Action
+        if: steps.skip-check.outputs.is_todo_scanner != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           prompt: |
@@ -64,7 +78,14 @@ jobs:
 
             Always be specific about which files need to change and what the
             expected behavior should be.
+
+            IMPORTANT — Logging & Diagnostics:
+            - Before making API calls, log what you are about to do (e.g. "Posting comment on issue #N", "Adding label X")
+            - After each API call, log whether it succeeded or failed, including HTTP status codes
+            - If you cannot post a comment or update labels, log the full error response
+            - Use the GitHub REST API directly via curl (the gh CLI is NOT available)
+            - Authentication: use the GITHUB_TOKEN env var (already set)
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: claude-sonnet-4-20250514
+          model: claude-haiku-4-5-20251001
           allowed_tools: "Bash,Read,Glob,Grep"

@@ -61,7 +61,8 @@ should be addressed together.
 
 3. **Issue title**: Write a concise, actionable issue title for each group.
 
-4. **Issue body**: Write a brief description suitable for a GitHub issue body.
+4. **Issue body**: Write a brief description suitable for a GitHub issue body. \
+Include specific file paths and line numbers for each marker in the group.
 
 Respond with a JSON object:
 ```json
@@ -142,7 +143,7 @@ class TodoScannerLLMAgent(Agent):
             "Phase 3: writing results (%d groups)...", len(groups),
         )
         self._write_to_blackboard(all_markers)
-        issues_created = self._create_github_issues(groups)
+        issues_created = self._create_github_issues(groups, actionable)
 
         llm_used = self.llm is not None
         summary = {
@@ -277,11 +278,15 @@ class TodoScannerLLMAgent(Agent):
             )
 
     def _create_github_issues(
-        self, groups: list[dict[str, Any]]
+        self,
+        groups: list[dict[str, Any]],
+        all_markers: list[dict[str, Any]] | None = None,
     ) -> int:
         """Create GitHub issues for triage groups.
 
         Only creates issues for p1 and p2 groups to avoid noise.
+        Appends a "Locations" section with file paths and line numbers
+        so issues always link back to the source code.
         """
         if self.gh is None:
             return 0
@@ -290,9 +295,28 @@ class TodoScannerLLMAgent(Agent):
         for g in groups:
             if g["priority"] not in ("p1", "p2"):
                 continue
+
+            body = g["body"]
+
+            # Append source locations from the marker data
+            if all_markers and g.get("markers"):
+                locations: list[str] = []
+                for idx in g["markers"]:
+                    if 0 <= idx < len(all_markers):
+                        m = all_markers[idx]
+                        fpath = m.get("file_path", "unknown")
+                        line = m.get("line_number", "?")
+                        marker = m.get("marker", "TODO")
+                        desc = m.get("description", "")[:120]
+                        locations.append(
+                            f"- `{fpath}:{line}` — **{marker}**: {desc}"
+                        )
+                if locations:
+                    body += "\n\n### Locations\n\n" + "\n".join(locations)
+
             self.create_finding_issue(
                 title=g["title"],
-                body=g["body"],
+                body=body,
                 priority=g["priority"],
             )
             created += 1
