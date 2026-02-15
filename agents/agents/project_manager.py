@@ -287,6 +287,10 @@ def main() -> None:
         help="Path to the blackboard database",
     )
     args = parser.parse_args()
+
+    from agents.log_config import setup as setup_logging
+
+    setup_logging()
     agent = ProjectManagerAgent(single_issue=args.issue, db_path=args.db_path)
     agent.run()
 

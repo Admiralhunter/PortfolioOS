@@ -326,10 +326,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="%(name)s | %(levelname)s | %(message)s",
-    )
+    from agents.log_config import setup as setup_logging
+
+    setup_logging(verbose=args.verbose)
 
     agent = TodoScannerLLMAgent(repo_root=args.repo_root, db_path=args.db_path)
     agent.run()

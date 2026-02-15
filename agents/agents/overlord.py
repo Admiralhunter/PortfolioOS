@@ -239,6 +239,10 @@ def main() -> None:
         help="Path to blackboard database",
     )
     args = parser.parse_args()
+
+    from agents.log_config import setup as setup_logging
+
+    setup_logging()
     run(args.report_dir, args.db_path)
 
 
