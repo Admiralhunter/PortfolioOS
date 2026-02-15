@@ -27,7 +27,7 @@ FROM node:22-slim AS node-deps
 RUN corepack enable && corepack prepare pnpm@10 --activate
 
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY .npmrc package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ COPY --from=python-deps /app/python/.venv ./python/.venv
 COPY --from=python-deps /app/agents/.venv ./agents/.venv
 
 # Copy application source
-COPY package.json pnpm-lock.yaml ./
+COPY .npmrc package.json pnpm-lock.yaml ./
 COPY tsconfig.json vite.main.config.ts vite.preload.config.ts vite.renderer.config.ts ./
 COPY forge.config.ts vitest.config.ts ./
 COPY electron/ ./electron/
