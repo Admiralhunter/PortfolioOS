@@ -186,6 +186,13 @@ cd python && uv run ruff check .  # Lint Python code
 # pnpm test                 # Run frontend tests (Vitest)
 # pnpm lint                 # Lint TypeScript/React code
 
+# Dead code detection (find unused functions, exports, files, deps)
+make dead-code                 # Run all (Python + agents + Node/TS)
+make dead-code-python          # Python sidecar only (vulture)
+make dead-code-agents          # Agent system only (vulture)
+make dead-code-js              # TypeScript/Node only (knip)
+scripts/detect-unused.sh       # Same as make dead-code (also accepts: python|agents|node)
+
 # Database
 # DuckDB and SQLite are embedded — no server to start
 
