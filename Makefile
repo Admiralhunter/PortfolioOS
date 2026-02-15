@@ -1,4 +1,4 @@
-.PHONY: check-python check-agents check-js check-all lint test test-js test-python test-agents lint-python lint-agents quality-gates
+.PHONY: check-python check-agents check-js check-all lint test test-js test-python test-agents lint-python lint-agents quality-gates dead-code dead-code-python dead-code-agents dead-code-js
 
 # ── Python sidecar ──────────────────────────────────────────────
 check-python:
@@ -44,6 +44,19 @@ check-js:
 
 test-js:
 	pnpm run test
+
+# ── Dead code detection ──────────────────────────────────────────
+dead-code:
+	@bash scripts/detect-unused.sh all
+
+dead-code-python:
+	@bash scripts/detect-unused.sh python
+
+dead-code-agents:
+	@bash scripts/detect-unused.sh agents
+
+dead-code-js:
+	@bash scripts/detect-unused.sh node
 
 # ── Combined ────────────────────────────────────────────────────
 check-all: check-python check-agents check-js quality-gates

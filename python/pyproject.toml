@@ -35,6 +35,7 @@ dev = [
     "pandas-stubs>=2.1",
     "sphinx>=7",
     "sphinx-autodoc-typehints>=2",
+    "vulture>=2.11",
 ]
 
 [tool.hatch.build.targets.sdist]

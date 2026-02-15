@@ -51,3 +51,11 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-commit]
+
+      - id: dead-code-check
+        name: "Detect unused code (vulture + knip)"
+        entry: bash scripts/detect-unused.sh all
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
