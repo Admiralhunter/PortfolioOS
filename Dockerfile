@@ -116,12 +116,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libcairo2 \
     xdg-utils \
-    # Python 3.13 runtime
+    # Python 3 runtime (required by node-gyp for native module rebuilds)
     python3 \
     python3-venv \
+    # Build tools for node-gyp native module compilation (e.g. duckdb for Electron)
+    make \
+    g++ \
     # Misc
     procps \
-    && update-ca-certificates 2>/dev/null || true \
+    && (update-ca-certificates 2>/dev/null || true) \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv (Python package manager)
