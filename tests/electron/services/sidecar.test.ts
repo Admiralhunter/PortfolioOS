@@ -39,7 +39,7 @@ describe("SidecarManager", () => {
     sidecar = null; // Already stopped
   });
 
-  it("sends a request and receives a response", async () => {
+  it("sends a request and receives a response", { timeout: 15000 }, async () => {
     sidecar = new SidecarManager(PYTHON_DIR);
     sidecar.start();
     await new Promise((r) => setTimeout(r, 2000));

@@ -11,12 +11,14 @@ Usage:
 # ── Entry points (called by setuptools console_scripts, not imported) ──
 from portfolioos.main import main  # noqa: F401
 
-# ── Pytest fixtures (injected by pytest, never called directly) ──
-from tests.conftest import reproducible_rng  # noqa: F401
-from tests.conftest import sample_portfolio_value  # noqa: F401
-from tests.conftest import sample_returns  # noqa: F401
-
 # ── Dataclass lifecycle hooks (called by @dataclass, not user code) ──
-from portfolioos.portfolio.cost_basis import TaxLot  # noqa: F401
+from portfolioos.portfolio.cost_basis import TaxLot
+
+# ── Pytest fixtures (injected by pytest, never called directly) ──
+from tests.conftest import (
+    reproducible_rng,  # noqa: F401
+    sample_portfolio_value,  # noqa: F401
+    sample_returns,  # noqa: F401
+)
 
 TaxLot.__post_init__  # noqa: B018
