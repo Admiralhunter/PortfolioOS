@@ -161,6 +161,12 @@ COPY python/ ./python/
 COPY agents/ ./agents/
 COPY scripts/ ./scripts/
 
+# Pre-rebuild native modules (duckdb, better-sqlite3) for Electron's Node ABI.
+# The node-deps stage builds them for Node.js 22, but Electron uses a different
+# ABI. Without this step, electron-forge attempts a runtime rebuild at startup
+# which fails in Docker due to environment/PATH issues with python3.
+RUN npx electron-rebuild 2>&1
+
 # Copy entrypoint (strip Windows \r line endings to prevent "bash\r: not found")
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
