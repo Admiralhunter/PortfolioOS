@@ -74,19 +74,26 @@ LABEL maintainer="PortfolioOS"
 LABEL description="PortfolioOS — local-first finance app (Docker-isolated)"
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
-# Bootstrap TLS trust before apt-get: append extra certs to the system bundle
-# and switch apt sources to HTTPS so they work behind TLS-intercepting proxies.
+# node:22-slim (bookworm) defaults to HTTPS apt sources but does NOT ship with
+# ca-certificates installed.  Behind a TLS-intercepting proxy this creates a
+# chicken-and-egg problem: apt cannot verify HTTPS without ca-certificates, but
+# cannot install ca-certificates without a working apt.
+#
+# Fix: switch apt sources to HTTP for the initial package install.  Package
+# integrity is still protected by GPG signatures, so HTTP is safe here.
+# After ca-certificates is installed we copy the proxy CAs and run
+# update-ca-certificates so all subsequent HTTPS traffic works.
 COPY extra-ca-cert[s]/ /usr/local/share/ca-certificates/extra/
 RUN mkdir -p /etc/ssl/certs && \
     for cert in /usr/local/share/ca-certificates/extra/*.crt; do \
       [ -f "$cert" ] && cat "$cert" >> /etc/ssl/certs/ca-certificates.crt; \
     done; \
     if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
-      sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
-      sed -i 's|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+      sed -i 's|https://deb.debian.org|http://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+      sed -i 's|https://security.debian.org|http://security.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
     elif [ -f /etc/apt/sources.list ]; then \
-      sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list; \
-      sed -i 's|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list; \
+      sed -i 's|https://deb.debian.org|http://deb.debian.org|g' /etc/apt/sources.list; \
+      sed -i 's|https://security.debian.org|http://security.debian.org|g' /etc/apt/sources.list; \
     fi; \
     true
 
