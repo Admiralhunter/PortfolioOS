@@ -5,10 +5,10 @@
  * transactions, snapshots), and the Python sidecar (import, reconcile).
  */
 
-import { ipcMain } from "electron";
+import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import type { SidecarManager } from "../services/sidecar";
 import type { DuckDBManager } from "../db/duckdb";
-import type { IPCResponse } from "../types";
+import type { IPCResponse, CreateAccountParams, TransactionFilters } from "../types";
 import {
   createAccount,
   getAccounts,
@@ -22,7 +22,7 @@ export function registerPortfolioHandlers(
 ): void {
   ipcMain.handle(
     "portfolio:create-account",
-    async (_event, params): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, params: CreateAccountParams): Promise<IPCResponse<unknown>> => {
       try {
         const account = createAccount(
           params.name,
@@ -50,7 +50,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:update-account",
-    async (_event, id, params): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, id: string, params: Partial<CreateAccountParams>): Promise<IPCResponse<unknown>> => {
       try {
         const account = updateAccount(id, params);
         if (!account) {
@@ -65,7 +65,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:delete-account",
-    async (_event, id): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, id: string): Promise<IPCResponse<unknown>> => {
       try {
         const deleted = deleteAccount(id);
         if (!deleted) {
@@ -80,7 +80,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:import-csv",
-    async (_event, filePath, accountId): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, filePath: string, accountId: string): Promise<IPCResponse<unknown>> => {
       try {
         const result = await sidecar.send("ingest.csv", {
           file_path: filePath,
@@ -95,7 +95,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:get-holdings",
-    async (_event, accountId?): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, accountId?: string): Promise<IPCResponse<unknown>> => {
       try {
         const holdings = await duckdb.getHoldings(accountId);
         return { success: true, data: holdings };
@@ -107,7 +107,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:get-transactions",
-    async (_event, filters?): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, filters?: TransactionFilters): Promise<IPCResponse<unknown>> => {
       try {
         const transactions = await duckdb.getTransactions(filters);
         return { success: true, data: transactions };
@@ -119,7 +119,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:get-snapshots",
-    async (_event, accountId, dateRange?): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, accountId: string, dateRange?: { start: string; end: string }): Promise<IPCResponse<unknown>> => {
       try {
         const snapshots = await duckdb.getSnapshots(accountId, dateRange);
         return { success: true, data: snapshots };
@@ -131,7 +131,7 @@ export function registerPortfolioHandlers(
 
   ipcMain.handle(
     "portfolio:reconcile",
-    async (_event, accountId): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, accountId: string): Promise<IPCResponse<unknown>> => {
       try {
         const transactions = await duckdb.getTransactions({
           account_id: accountId,

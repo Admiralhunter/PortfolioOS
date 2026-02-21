@@ -5,8 +5,9 @@
  * appropriate provider via the LLM manager.
  */
 
-import { ipcMain } from "electron";
+import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import type { IPCResponse } from "../types";
+import type { LLMOptions as LLMRequestOptions } from "../llm/types";
 import { getLLMProviders, setDefaultProvider } from "../db/sqlite";
 import type { LLMManager } from "../llm/manager";
 
@@ -39,7 +40,7 @@ export function registerLLMHandlers(llmManager: LLMManager): void {
 
   ipcMain.handle(
     "llm:send",
-    async (_event, prompt: string, options?): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, prompt: string, options?: LLMRequestOptions): Promise<IPCResponse<unknown>> => {
       try {
         const response = await llmManager.send(prompt, options);
         return { success: true, data: response };
@@ -51,7 +52,7 @@ export function registerLLMHandlers(llmManager: LLMManager): void {
 
   ipcMain.handle(
     "llm:add-provider",
-    async (_event, config): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, config: { name: string; provider_type: string; endpoint_url: string; model: string; is_local: boolean; api_key?: string }): Promise<IPCResponse<unknown>> => {
       try {
         const provider = await llmManager.addProvider(config);
         return { success: true, data: provider };
