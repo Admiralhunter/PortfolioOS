@@ -22,6 +22,7 @@ import type {
   LLMProvider,
   LLMOptions,
   LLMResponse,
+  AddProviderParams,
   ImportResult,
   AppPaths,
   Preferences,
@@ -55,6 +56,8 @@ export interface SimulationAPI {
 
 export interface LLMAPI {
   listProviders(): Promise<IPCResponse<LLMProvider[]>>;
+  addProvider(params: AddProviderParams): Promise<IPCResponse<{ id: string; name: string }>>;
+  deleteProvider(providerId: string): Promise<IPCResponse<void>>;
   setDefault(providerId: string): Promise<IPCResponse<void>>;
   send(prompt: string, options?: LLMOptions): Promise<IPCResponse<LLMResponse>>;
 }

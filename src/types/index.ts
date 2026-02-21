@@ -105,14 +105,27 @@ export interface SimulationConfig {
   seed?: number;
 }
 
+export type WithdrawalStrategy =
+  | "constant_dollar"
+  | "constant_percentage"
+  | "guyton_klinger";
+
+export type LifeEventType =
+  | "windfall"
+  | "expense"
+  | "income_change"
+  | "savings_rate_change";
+
+export type FIREType = "lean" | "normal" | "fat" | "coast" | "barista";
+
 export interface ScenarioConfig extends SimulationConfig {
-  withdrawal_strategy?: string;
+  withdrawal_strategy?: WithdrawalStrategy;
   life_events?: LifeEvent[];
 }
 
 export interface LifeEvent {
   year: number;
-  type: string;
+  type: LifeEventType;
   amount: number;
 }
 
@@ -129,6 +142,11 @@ export interface SensitivityResult {
   success_rate: number;
   median_final_value: number;
 }
+
+export type SensitivityParam =
+  | "withdrawal_rate"
+  | "inflation_rate"
+  | "n_years";
 
 // ── LLM ──
 
@@ -153,6 +171,26 @@ export interface LLMResponse {
   content: string;
   model: string;
   tokensUsed: { prompt: number; completion: number };
+}
+
+export type LLMProviderType =
+  | "lmstudio"
+  | "openai"
+  | "anthropic"
+  | "openrouter";
+
+export interface AddProviderParams {
+  name: string;
+  provider_type: LLMProviderType;
+  endpoint_url: string;
+  model: string;
+  is_local: boolean;
+  api_key?: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
 }
 
 // ── Data Source ──

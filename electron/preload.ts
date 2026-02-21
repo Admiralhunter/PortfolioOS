@@ -8,6 +8,7 @@
 
 import { contextBridge, ipcRenderer } from "electron";
 import type {
+  AddProviderParams,
   CreateAccountParams,
   LLMOptions,
   ScenarioConfig,
@@ -60,6 +61,10 @@ const api = {
   },
   llm: {
     listProviders: () => ipcRenderer.invoke("llm:list-providers"),
+    addProvider: (params: AddProviderParams) =>
+      ipcRenderer.invoke("llm:add-provider", params),
+    deleteProvider: (providerId: string) =>
+      ipcRenderer.invoke("llm:delete-provider", providerId),
     setDefault: (providerId: string) =>
       ipcRenderer.invoke("llm:set-default", providerId),
     send: (prompt: string, options?: LLMOptions) =>

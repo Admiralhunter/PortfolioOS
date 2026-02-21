@@ -155,6 +155,15 @@ export interface LLMResponse {
   tokensUsed: { prompt: number; completion: number };
 }
 
+export interface AddProviderParams {
+  name: string;
+  provider_type: string;
+  endpoint_url: string;
+  model: string;
+  is_local: boolean;
+  api_key?: string;
+}
+
 // ── Data Source ──
 
 export interface DataSource {
