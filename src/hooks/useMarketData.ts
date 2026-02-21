@@ -2,7 +2,7 @@
  * TanStack Query hooks for market data operations via IPC.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function usePriceHistory(
   symbol: string,
@@ -16,6 +16,56 @@ export function usePriceHistory(
       return response.data!;
     },
     enabled: !!symbol,
+  });
+}
+
+export function useFetchPriceHistory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      symbol,
+      startDate,
+      endDate,
+    }: {
+      symbol: string;
+      startDate: string;
+      endDate: string;
+    }) => {
+      const response = await window.api.market.fetchPriceHistory(
+        symbol,
+        startDate,
+        endDate
+      );
+      if (!response.success) throw new Error(response.error);
+      return response.data!;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["prices", variables.symbol],
+      });
+    },
+  });
+}
+
+export function useFetchMacroSeries() {
+  return useMutation({
+    mutationFn: async ({
+      seriesId,
+      startDate,
+      endDate,
+    }: {
+      seriesId: string;
+      startDate: string;
+      endDate: string;
+    }) => {
+      const response = await window.api.market.fetchMacroSeries(
+        seriesId,
+        startDate,
+        endDate
+      );
+      if (!response.success) throw new Error(response.error);
+      return response.data!;
+    },
   });
 }
 
