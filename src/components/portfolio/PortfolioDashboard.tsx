@@ -1,19 +1,22 @@
 /**
  * Portfolio dashboard — main view combining accounts, holdings,
- * allocation chart, and net worth summary.
+ * allocation chart, net worth summary, CSV import, and net worth tracker.
  */
 
 import { AccountsList } from "./AccountsList";
 import { HoldingsTable } from "./HoldingsTable";
 import { AllocationChart } from "./AllocationChart";
 import { NetWorthCard } from "./NetWorthCard";
+import { CSVImport } from "./CSVImport";
+import { NetWorthChart } from "./NetWorthChart";
 
 export function PortfolioDashboard() {
   return (
     <div className="flex gap-6 h-full">
-      {/* Left panel — accounts list */}
-      <div className="w-64 shrink-0">
+      {/* Left panel — accounts list + import */}
+      <div className="w-64 shrink-0 space-y-6">
         <AccountsList />
+        <CSVImport />
       </div>
 
       {/* Main content */}
@@ -30,6 +33,11 @@ export function PortfolioDashboard() {
             <h3 className="text-sm font-semibold text-foreground mb-3">Asset Allocation</h3>
             <AllocationChart />
           </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Net Worth History</h3>
+          <NetWorthChart />
         </div>
       </div>
     </div>
