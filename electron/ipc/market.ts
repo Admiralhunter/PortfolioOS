@@ -5,7 +5,7 @@
  * and DuckDB (cached reads).
  */
 
-import { ipcMain } from "electron";
+import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import type { SidecarManager } from "../services/sidecar";
 import type { DuckDBManager } from "../db/duckdb";
 import type { IPCResponse } from "../types";
@@ -58,7 +58,7 @@ export function registerMarketHandlers(
 
   ipcMain.handle(
     "market:get-cached-prices",
-    async (_event, symbol: string, dateRange?): Promise<IPCResponse<unknown>> => {
+    async (_event: IpcMainInvokeEvent, symbol: string, dateRange?: { start: string; end: string }): Promise<IPCResponse<unknown>> => {
       try {
         const prices = await duckdb.getPriceHistory(symbol, dateRange);
         return { success: true, data: prices };

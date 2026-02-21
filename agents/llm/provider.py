@@ -285,9 +285,7 @@ def get_provider(preference: str = "local") -> LLMProvider:
             model_override, preference,
         )
 
-    if model and cls in (AnthropicProvider, OpenAICompatibleProvider):
-        provider = cls(model=model)
-    elif model and cls is LMStudioProvider:
+    if model and cls in (AnthropicProvider, OpenAICompatibleProvider, LMStudioProvider):
         provider = cls(model=model)
     else:
         provider = cls()
