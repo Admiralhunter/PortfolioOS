@@ -30,7 +30,7 @@ jobs:
         run: uv run --project agents python -m agents.agents.todo_scanner --repo-root .
 
       - name: Upload blackboard
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: blackboard-todo-scanner
           path: agents/blackboard/blackboard.db
@@ -63,7 +63,7 @@ jobs:
         run: uv run --project agents python -m agents.agents.todo_scanner_llm --repo-root .
 
       - name: Upload blackboard
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: blackboard-todo-scanner-llm
           path: agents/blackboard/blackboard.db
