@@ -34,7 +34,7 @@ dev = [
     "mypy>=1.8",
     "pandas-stubs>=2.1",
     "sphinx>=7",
-    "sphinx-autodoc-typehints>=2",
+    "sphinx-autodoc-typehints>=3.10.0",
     "vulture>=2.11",
 ]
 
