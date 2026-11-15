@@ -15,7 +15,8 @@
     "lint": "eslint electron/ src/ --ext .ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dead-code": "knip"
+    "dead-code": "knip",
+    "verify:desktop": "node scripts/verify-desktop.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
@@ -79,6 +80,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "electron": "^42.11.16",
     "knip": "^5.83.1",
+    "playwright": "1.65.0",
     "tailwindcss": "^4.3.5",
     "typescript": "^5.7.0",
     "vite": "^6.4.5",

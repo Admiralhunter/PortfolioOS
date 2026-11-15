@@ -99,3 +99,35 @@ jobs:
 
       - name: Test
         run: pnpm run test
+
+  desktop:
+    name: Packaged desktop behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v7
+      - name: Install Python sidecar
+        run: uv sync --project python --frozen --group dev
+      - name: Package the application
+        run: |
+          set -o pipefail
+          mkdir -p verification-results
+          pnpm install --frozen-lockfile
+          pnpm exec install-electron
+          MAKEFLAGS=-j4 pnpm run package 2>&1 | tee verification-results/packaging.log
+      - name: Run the packaged app under Xvfb
+        run: |
+          set -o pipefail
+          xvfb-run -a pnpm run verify:desktop 2>&1 | tee verification-results/desktop.log
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: packaged-desktop-evidence
+          path: verification-results/
+          if-no-files-found: warn
