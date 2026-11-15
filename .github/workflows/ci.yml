@@ -103,6 +103,8 @@ jobs:
         run: pnpm run test
       - name: Verify shared database files across Python and Node
         run: node scripts/verify-db-interop.mjs
+      - name: Verify the dead-code analyzer and load the project configuration
+        run: node scripts/verify-analyzer.mjs
 
   desktop:
     name: Packaged desktop behavior
