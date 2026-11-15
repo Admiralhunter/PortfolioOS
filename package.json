@@ -2,7 +2,7 @@
   "name": "portfolioos",
   "version": "0.1.0",
   "description": "Local-first, privacy-preserving desktop application for personal finance management and FIRE analysis",
-  "main": ".vite/build/main.js",
+  "main": ".vite/build/main.cjs",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "packageManager": "pnpm@10.29.3",
