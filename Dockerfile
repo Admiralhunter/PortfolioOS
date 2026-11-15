@@ -46,7 +46,8 @@ RUN uv sync --frozen --no-dev --native-tls
 # ---------------------------------------------------------------------------
 # Stage 2: Install Node dependencies
 # ---------------------------------------------------------------------------
-FROM node:22-slim AS node-deps
+# Use the build image so native packages can compile if no prebuild is available.
+FROM node:22-bookworm AS node-deps
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
 # node:22-slim doesn't ship ca-certificates, so we manually create a PEM
@@ -165,7 +166,7 @@ COPY scripts/ ./scripts/
 # The node-deps stage builds them for Node.js 22, but Electron uses a different
 # ABI. Without this step, electron-forge attempts a runtime rebuild at startup
 # which fails in Docker due to environment/PATH issues with python3.
-RUN npx electron-rebuild 2>&1
+RUN MAKEFLAGS=-j4 pnpm exec electron-rebuild
 
 # Copy entrypoint (strip Windows \r line endings to prevent "bash\r: not found")
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -178,6 +179,9 @@ RUN mkdir -p /home/portfolioos/.portfolioos && \
     chown -R portfolioos:portfolioos /app
 
 USER portfolioos
+
+# Install the versioned Electron binary during the build for offline runs.
+RUN pnpm exec install-electron
 
 # Electron flags for running inside Docker
 ENV ELECTRON_DISABLE_GPU=1
