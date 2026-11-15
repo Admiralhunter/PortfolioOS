@@ -152,9 +152,7 @@ WORKDIR /app
 
 # Keep the interpreter at the same path used by the virtual environments.
 ENV UV_PYTHON_INSTALL_DIR=/opt/portfolioos-python \
-    UV_PYTHON_PREFERENCE=only-managed \
-    UV_NO_SYNC=1 \
-    UV_OFFLINE=1
+    UV_PYTHON_PREFERENCE=only-managed
 COPY --from=python-deps /opt/portfolioos-python /opt/portfolioos-python
 
 # Copy dependency artifacts from build stages
