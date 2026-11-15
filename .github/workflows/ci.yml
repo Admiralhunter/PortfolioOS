@@ -11,8 +11,13 @@ permissions:
 
 jobs:
   python:
-    name: Python checks
+    name: Python checks (${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.13", "3.15"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     defaults:
       run:
         working-directory: python
@@ -142,8 +147,13 @@ jobs:
           if-no-files-found: warn
 
   agents:
-    name: Agent package behavior
+    name: Agent package behavior (${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.13", "3.15"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -156,7 +166,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: agents-verification
+          name: agents-verification-${{ matrix.python }}
           path: agents-verification.log
           if-no-files-found: warn
 

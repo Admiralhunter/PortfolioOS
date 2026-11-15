@@ -24,10 +24,12 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Install Python dependencies
 # ---------------------------------------------------------------------------
-FROM python:3.13-slim AS python-deps
+ARG PYTHON_VERSION=3.15
+FROM python:${PYTHON_VERSION}-slim AS python-deps
+ARG PYTHON_VERSION
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
-# python:3.13-slim ships with ca-certificates, so update-ca-certificates works.
+# The Python base includes ca-certificates.
 COPY extra-ca-cert[s]/ /usr/local/share/ca-certificates/extra/
 RUN update-ca-certificates 2>/dev/null || true
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
@@ -36,7 +38,8 @@ ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 ENV UV_PYTHON_INSTALL_DIR=/opt/portfolioos-python \
-    UV_PYTHON_PREFERENCE=only-managed
+    UV_PYTHON_PREFERENCE=only-managed \
+    UV_PYTHON=${PYTHON_VERSION}
 
 WORKDIR /app/python
 COPY python/pyproject.toml python/uv.lock python/.python-version python/README.md ./
@@ -72,13 +75,14 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 # Stage 3: Final runtime image
 # ---------------------------------------------------------------------------
-FROM node:22-slim
+FROM node:26-bookworm-slim
+ARG PYTHON_VERSION
 
 LABEL maintainer="PortfolioOS"
 LABEL description="PortfolioOS — local-first finance app (Docker-isolated)"
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
-# node:22-slim (bookworm) defaults to HTTPS apt sources but does NOT ship with
+# The Bookworm slim image may default to HTTPS apt sources but does NOT ship with
 # ca-certificates installed.  Behind a TLS-intercepting proxy this creates a
 # chicken-and-egg problem: apt cannot verify HTTPS without ca-certificates, but
 # cannot install ca-certificates without a working apt.
@@ -143,7 +147,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Enable pnpm
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN npm install --global pnpm@10.29.3
 
 # Create non-root user for security
 RUN groupadd -r portfolioos && useradd -r -g portfolioos -m -s /bin/bash portfolioos
@@ -152,7 +156,8 @@ WORKDIR /app
 
 # Keep the interpreter at the same path used by the virtual environments.
 ENV UV_PYTHON_INSTALL_DIR=/opt/portfolioos-python \
-    UV_PYTHON_PREFERENCE=only-managed
+    UV_PYTHON_PREFERENCE=only-managed \
+    UV_PYTHON=${PYTHON_VERSION}
 COPY --from=python-deps /opt/portfolioos-python /opt/portfolioos-python
 
 # Copy dependency artifacts from build stages
