@@ -72,13 +72,13 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 # Stage 3: Final runtime image
 # ---------------------------------------------------------------------------
-FROM node:22-slim
+FROM node:26-bookworm-slim
 
 LABEL maintainer="PortfolioOS"
 LABEL description="PortfolioOS — local-first finance app (Docker-isolated)"
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
-# node:22-slim (bookworm) defaults to HTTPS apt sources but does NOT ship with
+# The Bookworm slim image may default to HTTPS apt sources but does NOT ship with
 # ca-certificates installed.  Behind a TLS-intercepting proxy this creates a
 # chicken-and-egg problem: apt cannot verify HTTPS without ca-certificates, but
 # cannot install ca-certificates without a working apt.
@@ -143,7 +143,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Enable pnpm
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN npm install --global pnpm@10.29.3
 
 # Create non-root user for security
 RUN groupadd -r portfolioos && useradd -r -g portfolioos -m -s /bin/bash portfolioos
