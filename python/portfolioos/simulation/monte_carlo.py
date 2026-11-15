@@ -6,9 +6,9 @@ Default: 10,000 trials over a 50-year horizon using NumPy array operations.
 Performance target: 10,000 trials x 50 years < 2 seconds on modern hardware.
 
 References:
-    Bengen, W. P. (1994). "Determining Withdrawal Rates Using Historical Data."
-    Trinity Study (Cooley, Hubbard, Walz, 1998).
-        "Retirement Savings: Choosing a Withdrawal Rate That Is Sustainable."
+    - Bengen, W. P. (1994). "Determining Withdrawal Rates Using Historical Data."
+    - Trinity Study (Cooley, Hubbard, Walz, 1998).
+      "Retirement Savings: Choosing a Withdrawal Rate That Is Sustainable."
 
 """
 

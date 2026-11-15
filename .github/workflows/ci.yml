@@ -41,6 +41,8 @@ jobs:
 
       - name: Test + coverage (pytest)
         run: uv run pytest --cov --cov-report=term-missing
+      - name: Build the API documentation
+        run: uv run --frozen sphinx-build -W -b html docs .reports/docs
 
   quality-gates:
     name: Quality gates
@@ -99,6 +101,8 @@ jobs:
 
       - name: Test
         run: pnpm run test
+      - name: Verify shared database files across Python and Node
+        run: node scripts/verify-db-interop.mjs
 
   desktop:
     name: Packaged desktop behavior
@@ -133,4 +137,23 @@ jobs:
         with:
           name: packaged-desktop-evidence
           path: verification-results/
+          if-no-files-found: warn
+
+  agents:
+    name: Agent package behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --project agents --frozen --group dev
+      - name: Verify scanners, fixture provider handling, and blackboard state
+        run: |
+          set -o pipefail
+          uv run --project agents --frozen pytest agents/tests 2>&1 | tee agents-verification.log
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: agents-verification
+          path: agents-verification.log
           if-no-files-found: warn

@@ -31,7 +31,7 @@ def _generate_id(*parts: str) -> str:
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
-def add_transaction(  # noqa: PLR0913
+def add_transaction(  # noqa: PLR0913, PLR0917
     conn: duckdb.DuckDBPyConnection,
     account_id: str,
     symbol: str,
