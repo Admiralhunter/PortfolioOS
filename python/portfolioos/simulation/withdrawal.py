@@ -6,10 +6,10 @@ Supports:
     - Guyton-Klinger guardrails
 
 References:
-    Bengen, W. P. (1994). "Determining Withdrawal Rates Using Historical Data."
-    Guyton, J. T. & Klinger, W. J. (2006).
-        "Decision Rules and Maximum Initial Withdrawal Rates."
-    Kitces, M. (2008+). Rising equity glidepath research.
+    - Bengen, W. P. (1994). "Determining Withdrawal Rates Using Historical Data."
+    - Guyton, J. T. & Klinger, W. J. (2006).
+      "Decision Rules and Maximum Initial Withdrawal Rates."
+    - Kitces, M. (2008+). Rising equity glidepath research.
 
 """
 

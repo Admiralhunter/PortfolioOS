@@ -35,6 +35,9 @@ ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
+ENV UV_PYTHON_INSTALL_DIR=/opt/portfolioos-python \
+    UV_PYTHON_PREFERENCE=only-managed
+
 WORKDIR /app/python
 COPY python/pyproject.toml python/uv.lock python/.python-version python/README.md ./
 RUN uv sync --frozen --no-dev --native-tls
@@ -146,6 +149,11 @@ RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 RUN groupadd -r portfolioos && useradd -r -g portfolioos -m -s /bin/bash portfolioos
 
 WORKDIR /app
+
+# Keep the interpreter at the same path used by the virtual environments.
+ENV UV_PYTHON_INSTALL_DIR=/opt/portfolioos-python \
+    UV_PYTHON_PREFERENCE=only-managed
+COPY --from=python-deps /opt/portfolioos-python /opt/portfolioos-python
 
 # Copy dependency artifacts from build stages
 COPY --from=node-deps /app/node_modules ./node_modules

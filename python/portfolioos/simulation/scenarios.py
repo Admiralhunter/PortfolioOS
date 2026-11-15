@@ -84,7 +84,7 @@ class ScenarioConfig:
     seed: int | None = None
 
 
-def run_scenario(  # noqa: PLR0913
+def run_scenario(  # noqa: PLR0913, PLR0917
     initial_portfolio: float,
     annual_withdrawal: float,
     return_distribution: list[float] | NDArray[np.float64],
@@ -168,7 +168,7 @@ def run_scenario(  # noqa: PLR0913
     }
 
 
-def sensitivity_analysis(  # noqa: PLR0913
+def sensitivity_analysis(  # noqa: PLR0913, PLR0917
     initial_portfolio: float,
     annual_withdrawal: float,
     return_distribution: list[float] | NDArray[np.float64],

@@ -12,7 +12,7 @@ case "$COMMAND" in
     echo "[portfolioos] Starting Electron app..."
     # --no-sandbox is required when running Electron as non-root in Docker.
     # The container itself provides the isolation boundary.
-    exec pnpm start -- --no-sandbox "$@"
+    UV_NO_SYNC=1 UV_OFFLINE=1 exec pnpm start -- --no-sandbox "$@"
     ;;
   test)
     echo "[portfolioos] Running tests..."
