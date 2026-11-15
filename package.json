@@ -39,7 +39,6 @@
     ],
     "overrides": {
       "@babel/core@>=7.0.0 <7.29.6": "7.29.6",
-      "@electron/packager@18.4.4": "20.3.0",
       "@tootallnate/once@>=2.0.0 <2.0.1": "2.0.1",
       "@xmldom/xmldom@>=0.8.0 <0.8.15": "0.8.15",
       "brace-expansion@>=1.0.0 <1.1.21": "1.1.21",
@@ -65,12 +64,12 @@
     }
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.6.0",
-    "@electron-forge/maker-deb": "^7.6.0",
-    "@electron-forge/maker-rpm": "^7.6.0",
-    "@electron-forge/maker-squirrel": "^7.6.0",
-    "@electron-forge/maker-zip": "^7.6.0",
-    "@electron-forge/plugin-vite": "^7.6.0",
+    "@electron-forge/cli": "^8.0.1",
+    "@electron-forge/maker-deb": "^8.0.1",
+    "@electron-forge/maker-rpm": "^8.0.1",
+    "@electron-forge/maker-squirrel": "^8.0.1",
+    "@electron-forge/maker-zip": "^8.0.1",
+    "@electron-forge/plugin-vite": "^8.0.1",
     "@tailwindcss/vite": "^4.3.5",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^25.3.0",
