@@ -157,3 +157,22 @@ jobs:
           name: agents-verification
           path: agents-verification.log
           if-no-files-found: warn
+
+  container:
+    name: Offline container sidecar behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build the runtime image and exercise the sidecar
+        run: |
+          set -o pipefail
+          mkdir -p verification-results
+          docker build -t portfolioos:verification . 2>&1 | tee verification-results/docker-build.log
+          bash scripts/verify-container.sh portfolioos:verification 2>&1 | tee verification-results/docker-sidecar.log
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: container-verification
+          path: verification-results/
+          if-no-files-found: warn
