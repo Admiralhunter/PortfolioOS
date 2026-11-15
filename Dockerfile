@@ -164,7 +164,7 @@ COPY --from=python-deps /app/agents/.venv ./agents/.venv
 
 # Copy application source
 COPY .npmrc package.json pnpm-lock.yaml ./
-COPY tsconfig.json vite.main.config.ts vite.preload.config.ts vite.renderer.config.ts ./
+COPY index.html tsconfig.json vite.main.config.ts vite.preload.config.ts vite.renderer.config.ts ./
 COPY forge.config.ts vitest.config.ts ./
 COPY electron/ ./electron/
 COPY src/ ./src/
