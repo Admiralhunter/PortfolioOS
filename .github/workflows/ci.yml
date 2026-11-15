@@ -166,7 +166,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: agents-verification
+          name: agents-verification-${{ matrix.python }}
           path: agents-verification.log
           if-no-files-found: warn
 
