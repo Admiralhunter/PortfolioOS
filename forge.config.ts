@@ -7,7 +7,9 @@ import { MakerRpm } from "@electron-forge/maker-rpm";
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: { unpack: "**/*.node" },
+    // Vite bundles the renderer; native externals still need their runtime packages.
+    ignore: (file) => file !== "" && !/^\/(?:\.vite|node_modules)(?:\/|$)/.test(file),
   },
   makers: [
     new MakerSquirrel({}),

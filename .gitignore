@@ -64,3 +64,5 @@ python/.venv/
 
 # ── Docker build artifacts ──
 extra-ca-certs/
+
+verification-results/
