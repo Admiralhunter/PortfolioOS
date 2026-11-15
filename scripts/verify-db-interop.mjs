@@ -19,7 +19,7 @@ const runDesktopDriver = (access, query) => execFileSync(process.execPath, [
     const database = new duckdb.Database(filename, flags)
     try {
       const rows = await promisify(database.all.bind(database))(sql)
-      console.log(JSON.stringify(rows))
+      if (access === 'read') console.log(JSON.stringify(rows))
     } finally {
       await promisify(database.close.bind(database))()
     }
