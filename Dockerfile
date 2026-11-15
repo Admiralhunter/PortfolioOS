@@ -56,7 +56,7 @@ RUN uv sync --frozen --no-dev --native-tls
 FROM node:26-bookworm AS node-deps
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
-# the slim image may lack ca-certificates, so we manually create a PEM
+# The slim image may lack ca-certificates, so we manually create a PEM
 # bundle from any extra certs and point Node to it.
 COPY extra-ca-cert[s]/ /tmp/extra-certs/
 RUN mkdir -p /usr/local/share/ca-certificates && \
@@ -70,7 +70,7 @@ RUN npm install --global pnpm@10.29.3
 
 WORKDIR /app
 COPY .npmrc package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN MAKEFLAGS=-j4 pnpm install --frozen-lockfile
 
 # ---------------------------------------------------------------------------
 # Stage 3: Final runtime image
