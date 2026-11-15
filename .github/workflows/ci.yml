@@ -11,7 +11,13 @@ permissions:
 
 jobs:
   python:
-    name: Python checks (${{ matrix.python }})     runs-on: ubuntu-latest     strategy:       matrix:         python: ["3.13", "3.15"]     env:       UV_PYTHON: ${{ matrix.python }}
+    name: Python checks (${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.13", "3.15"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     defaults:
       run:
         working-directory: python
@@ -141,7 +147,13 @@ jobs:
           if-no-files-found: warn
 
   agents:
-    name: Agent package behavior (${{ matrix.python }})     runs-on: ubuntu-latest     strategy:       matrix:         python: ["3.13", "3.15"]     env:       UV_PYTHON: ${{ matrix.python }}
+    name: Agent package behavior (${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.13", "3.15"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
