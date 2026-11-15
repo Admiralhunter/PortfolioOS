@@ -53,7 +53,7 @@ RUN uv sync --frozen --no-dev --native-tls
 # Stage 2: Install Node dependencies
 # ---------------------------------------------------------------------------
 # Use the build image so native packages can compile if no prebuild is available.
-FROM node:22-bookworm AS node-deps
+FROM node:26-bookworm AS node-deps
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
 # node:22-slim doesn't ship ca-certificates, so we manually create a PEM
