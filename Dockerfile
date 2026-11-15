@@ -53,10 +53,10 @@ RUN uv sync --frozen --no-dev --native-tls
 # Stage 2: Install Node dependencies
 # ---------------------------------------------------------------------------
 # Use the build image so native packages can compile if no prebuild is available.
-FROM node:22-bookworm AS node-deps
+FROM node:26-bookworm AS node-deps
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
-# node:22-slim doesn't ship ca-certificates, so we manually create a PEM
+# the slim image may lack ca-certificates, so we manually create a PEM
 # bundle from any extra certs and point Node to it.
 COPY extra-ca-cert[s]/ /tmp/extra-certs/
 RUN mkdir -p /usr/local/share/ca-certificates && \
@@ -66,7 +66,7 @@ RUN mkdir -p /usr/local/share/ca-certificates && \
     done
 ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/custom-ca-bundle.pem
 
-RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN npm install --global pnpm@10.29.3
 
 WORKDIR /app
 COPY .npmrc package.json pnpm-lock.yaml ./
@@ -176,7 +176,7 @@ COPY agents/ ./agents/
 COPY scripts/ ./scripts/
 
 # Pre-rebuild native modules (duckdb, better-sqlite3) for Electron's Node ABI.
-# The node-deps stage builds them for Node.js 22, but Electron uses a different
+# The node-deps stage builds them for Node.js 26, but Electron uses a different
 # ABI. Without this step, electron-forge attempts a runtime rebuild at startup
 # which fails in Docker due to environment/PATH issues with python3.
 RUN MAKEFLAGS=-j4 pnpm exec electron-rebuild
