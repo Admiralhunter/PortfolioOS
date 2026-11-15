@@ -122,6 +122,9 @@ jobs:
           pnpm exec install-electron
           MAKEFLAGS=-j4 pnpm run package 2>&1 | tee verification-results/packaging.log
       - name: Run the packaged app under Xvfb
+        env:
+          DEBUG: pw:browser*
+          ELECTRON_ENABLE_LOGGING: '1'
         run: |
           set -o pipefail
           xvfb-run -a pnpm run verify:desktop 2>&1 | tee verification-results/desktop.log

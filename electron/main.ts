@@ -82,6 +82,9 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+}).catch((error: unknown) => {
+  console.error("PortfolioOS startup failed:", error);
+  app.exit(1);
 });
 
 app.on("window-all-closed", () => {
