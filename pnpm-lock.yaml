@@ -104,8 +104,8 @@ importers:
         specifier: ^5.1.4
         version: 5.1.4(vite@7.3.8(@types/node@25.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.46.0)(yaml@2.9.1))
       electron:
-        specifier: ^42.11.16
-        version: 42.11.18
+        specifier: ^45.3.1
+        version: 45.3.1
       knip:
         specifier: ^6.45.1
         version: 6.45.1
@@ -1507,8 +1507,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@42.11.18:
-    resolution: {integrity: sha512-hbzodG06x/l7uq+oeyob5ugv6qZBmJRWC7Uto5QEE99xSHUARz6d+++Rz+79T/ssTYTQkONW4ciTTcJuAbXKIQ==}
+  electron@45.3.1:
+    resolution: {integrity: sha512-1oYau2B4RXF27Df2fzvrFDJoy8AOSVlgS6gklo6wkLZ/QWJemJCJHkY4+uuacvSFUtR8IimiLukLNFoYP0fmjA==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -4006,7 +4006,7 @@ snapshots:
       - supports-color
     optional: true
 
-  electron@42.11.18:
+  electron@45.3.1:
     dependencies:
       '@electron-internal/extract-zip': 1.0.8
       '@electron/get': 5.1.0
