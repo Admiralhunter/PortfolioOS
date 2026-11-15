@@ -24,7 +24,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Install Python dependencies
 # ---------------------------------------------------------------------------
-FROM python:3.13-slim AS python-deps
+FROM python:3.15-slim AS python-deps
 
 # Optional extra CA certificates (for corporate proxy / MITM TLS).
 # python:3.13-slim ships with ca-certificates, so update-ca-certificates works.
