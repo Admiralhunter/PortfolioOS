@@ -180,6 +180,9 @@ RUN mkdir -p /home/portfolioos/.portfolioos && \
 
 USER portfolioos
 
+# Install the versioned Electron binary during the build for offline runs.
+RUN pnpm exec install-electron
+
 # Electron flags for running inside Docker
 ENV ELECTRON_DISABLE_GPU=1
 ENV ELECTRON_NO_ATTACH_CONSOLE=1
